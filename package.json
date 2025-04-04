@@ -1,0 +1,16 @@
+{
+  "name": "colloquy",
+  "exports": {
+    ".": "src/colloquy.ts"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "openai": "^4.91.1"
+  }
+}

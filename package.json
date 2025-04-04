@@ -1,5 +1,6 @@
 {
   "name": "colloquy",
+  "version": "0.1",
   "exports": {
     ".": "src/colloquy.ts"
   },

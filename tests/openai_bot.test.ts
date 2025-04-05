@@ -1,25 +1,43 @@
 import { describe, test, expect, mock } from "bun:test"
-import { BotMessage, OpenAIBot, UserMessage, OpenAIFunction, UnnamedFunctionError } from "../src/colloquy"
-import type { EasyInputMessage, Tool } from "openai/resources/responses/responses.mjs"
-import { parameter_names, type Parameter } from "../src/openai_bot"
+import { BotMessage, OpenAIBot, UserMessage, PromptFunction, UnnamedFunctionError } from "../src/colloquy"
+import type { EasyInputMessage, ResponseFunctionToolCall, ResponseInputItem, Tool } from "openai/resources/responses/responses.mjs"
+import { FunctionCallMessage, FunctionResultMessage } from "../src/message"
+import { parameter_names, type Parameter } from "../src/function"
 
 
 class MockOpenAIBot extends OpenAIBot {
+  requests: {
+    model: string,
+    input: ResponseInputItem[]
+    tools?: Tool[]
+  }[]
+
   constructor(...args: ConstructorParameters<typeof OpenAIBot>) {
     super(...args)
-    this.mock_response("")
+    this.mock_response_text("")
+    this.requests = []
   }
 
-  last_created?: {
-    model: string,
-    input: EasyInputMessage[]
-    tools?: Tool[]
+  mock_response_text(output_text: string) {
+    this.mock_responses([this.text_response(output_text)])
   }
-  mock_response(output_text: string) {
+
+  text_response(output_text: string): any {
+    return {
+      output_text,
+      output: [{
+        type: "message",
+        status: "completed",
+      }],
+    }
+  }
+
+  mock_responses(responses: any[]) {
     // @ts-ignore: Getting the types to match properly is too painful to contemplate
-    this.openai.responses.create = mock(async (value) => {
-      this.last_created = value
-      return { output_text }
+    this.openai.responses.create = mock(async (request) => {
+      this.requests.push(request)
+      if (responses.length == 0) throw new Error("expected a mocked response")
+      return responses.shift()
     })
   }
 }
@@ -27,50 +45,51 @@ class MockOpenAIBot extends OpenAIBot {
 test("create a simple openai bot", async () => {
   const bot = new MockOpenAIBot()
   const response = "Hi!"
-  bot.mock_response(response)
+  bot.mock_response_text(response)
   expect(await bot.prompt("hello")).toEqual(response)
 })
 
 test("includes history of previous prompts", async () => {
   const bot = new MockOpenAIBot()
-  bot.mock_response("Hi!")
+  bot.mock_response_text("Hi!")
   await bot.prompt("hello")
   expect(bot.history).toEqual([new UserMessage("hello"), new BotMessage("Hi!")])
 })
 
 test("sends instructions as a system message", async () => {
   const bot = new MockOpenAIBot({ instructions: "something" })
-  bot.mock_response("Hi!")
+  bot.mock_response_text("Hi!")
   await bot.prompt("hello")
-  expect(bot.last_created).toEqual({
-    model: "gpt-4o-mini",
-    input: [
-      {
-        role: "system",
-        content: "something",
-      },
-      {
-        role: "user",
-        content: "hello",
-      },
-    ],
-  })
+  expect(bot.requests.at(-1)!.input).toEqual([
+    {
+      role: "system",
+      content: "something",
+    },
+    {
+      role: "user",
+      content: "hello",
+    },
+  ])
 })
 
 test("excludes system message when instructions are absent", async () => {
   const bot = new MockOpenAIBot()
-  bot.mock_response("hi")
+  bot.mock_response_text("hi")
   await bot.prompt("hi")
-  expect(bot.last_created!.input.map((i) => i.role)).not.toContain("system")
+  expect(bot.requests.at(-1)!.input.map(
+    (i) => (i as EasyInputMessage).role
+  )).not.toContain("system")
 })
 
 test("includes history in subsequent prompts", async () => {
   const bot = new MockOpenAIBot()
-  bot.mock_response("Hello, how are you?")
+  bot.mock_response_text("Hello, how are you?")
   await bot.prompt("Hi!")
-  bot.mock_response("That's nice")
+  bot.mock_response_text("That's nice")
   await bot.prompt("Good")
-  expect(bot.last_created!.input.map((i) => i.content)).toEqual([
+  expect(bot.requests.at(-1)!.input.map(
+    (i) => (i as EasyInputMessage).content
+  )).toEqual([
     "Hi!",
     "Hello, how are you?",
     "Good",
@@ -79,33 +98,33 @@ test("includes history in subsequent prompts", async () => {
 
 describe("functions", () => {
   test("the provided function is provided as a tool", async () => {
-    const fn = new OpenAIFunction(() => {}, {
+    const fn = new PromptFunction(() => {}, {
       name: "test",
     })
     const bot = new MockOpenAIBot({
       functions: [fn],
     })
     await bot.prompt("test")
-    expect(bot.last_created!.tools).toEqual([{
+    expect(bot.requests.at(-1)!.tools).toEqual([{
       type: "function",
-      name: fn.name,
+      name: fn.tool.name,
       parameters: {},
       strict: true,
     }])
   })
 
   test("an unnamed anonymous function throws an error", () => {
-    expect(() => new OpenAIFunction(() => {})).toThrow(new UnnamedFunctionError())
-    expect(() => new OpenAIFunction(function () {})).toThrow(UnnamedFunctionError)
+    expect(() => new PromptFunction(() => {})).toThrow(new UnnamedFunctionError())
+    expect(() => new PromptFunction(function () {})).toThrow(UnnamedFunctionError)
   })
 
   test("the name of a function is used", () => {
-    const fn = new OpenAIFunction(function test() {})
+    const fn = new PromptFunction(function test() {})
     expect(fn.tool.name).toEqual("test")
   })
 
   test("a description is included", () => {
-    const fn = new OpenAIFunction(function test() {}, {
+    const fn = new PromptFunction(function test() {}, {
       description: "a test function",
     })
 
@@ -113,7 +132,7 @@ describe("functions", () => {
   })
 
   test("a parameter is included", () => {
-    const fn = new OpenAIFunction(function test(_a: unknown) {})
+    const fn = new PromptFunction(function test(_a: unknown) {})
     expect(fn.tool.parameters["_a"]).toEqual({ type: "any" })
   })
 
@@ -134,14 +153,14 @@ describe("functions", () => {
   })
 
   test("attaches provided information", () => {
-    const fn = new OpenAIFunction(function test(_a: unknown) {}, {
+    const fn = new PromptFunction(function test(_a: unknown) {}, {
       parameters: { "_a": { type: "string" }}
     })
     expect(fn.tool.parameters["_a"]).toEqual({ type: "string" })
   })
 
   test("detects an object correctly", () => {
-    const fn = new OpenAIFunction(function test(_a = { foo: 1 }) {})
+    const fn = new PromptFunction(function test(_a = { foo: 1 }) {})
     const param = fn.tool.parameters["_a"] as Parameter
     expect(param.type).toEqual("object")
     expect(param.properties).toEqual({
@@ -150,7 +169,7 @@ describe("functions", () => {
   })
 
   test("detects a nested object correctly", () => {
-    const fn = new OpenAIFunction(function test(_a = { foo: { bar: 1 } }) {})
+    const fn = new PromptFunction(function test(_a = { foo: { bar: 1 } }) {})
     const param = fn.tool.parameters["_a"] as Parameter
     expect(param.type).toEqual("object")
     expect(param.properties).toEqual({
@@ -164,14 +183,14 @@ describe("functions", () => {
   })
 
   test("null parameter", () => {
-    const fn = new OpenAIFunction(function test(_null = null) {})
+    const fn = new PromptFunction(function test(_null = null) {})
     expect((fn.tool.parameters["_null"] as Parameter).type)
       .toEqual("null")
   })
 
   test("provided description is included", () => {
     const description = "first test parameter"
-    const fn = new OpenAIFunction(function test(_a = 1) {}, { parameters: {
+    const fn = new PromptFunction(function test(_a = 1) {}, { parameters: {
       _a: { description }
     } })
     const param = fn.tool.parameters["_a"] as Parameter
@@ -181,7 +200,7 @@ describe("functions", () => {
 
   test("nested parameters are augmented", () => {
     const description = "first test parameter"
-    const fn = new OpenAIFunction(function test(_a = {
+    const fn = new PromptFunction(function test(_a = {
       b: { c: 1 }
     }) {}, { parameters: {
       _a: {
@@ -200,5 +219,60 @@ describe("functions", () => {
     expect(param.type).toEqual("number")
   })
 
-  // TODO: commas in nested definitions
+  test("commas in nested definitions", () => {
+    const fn = new PromptFunction(function test(_a = { b: 1, c: "foo" }) {})
+    expect(Object.keys(fn.tool.parameters)).toEqual(["_a"])
+  })
+
+  test("calls a function when AI requests it", async () => {
+    let called = false
+    const fn = new PromptFunction(function test() {
+      called = true
+      return "test"
+    })
+    const bot = new MockOpenAIBot({ functions: [fn] })
+
+    const function_call_output: ResponseFunctionToolCall = {
+      type: "function_call",
+      call_id: "12345",
+      name: "test",
+      arguments: "",
+    }
+
+    bot.mock_responses([
+      { output: [function_call_output] },
+      bot.text_response("Hello"),
+    ])
+
+    await bot.prompt("hi")
+    expect(called).toBeTrue()
+
+    expect(bot.requests.map((r) => r.input)).toEqual([
+      [
+        {
+          content: "hi",
+          role: "user",
+        }
+      ],
+      [
+        {
+          content: "hi",
+          role: "user",
+        },
+        function_call_output,
+        {
+          type: "function_call_output",
+          call_id: function_call_output.call_id,
+          output: "test",
+        }
+      ],
+    ])
+
+    expect(bot.history).toEqual([
+      new UserMessage("hi"),
+      new FunctionCallMessage(fn, function_call_output),
+      new FunctionResultMessage("12345", "test"),
+      new BotMessage("Hello"),
+    ])
+  })
 })

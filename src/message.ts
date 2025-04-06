@@ -63,8 +63,8 @@ export class FunctionCallMessage extends Message {
     }
   }
 
-  invoke(): FunctionResultMessage {
-    return new FunctionResultMessage(this.tool_call.call_id, this.fn.fn())
+  async invoke(): Promise<FunctionResultMessage> {
+    return new FunctionResultMessage(this.tool_call.call_id, await this.fn.fn())
   }
 }
 

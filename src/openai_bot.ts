@@ -21,7 +21,7 @@ export class OpenAIBot extends ChatBot {
 
     for (const tool_call of response.output || []) {
       if (tool_call.type === "function_call") {
-        this.call_function(tool_call)
+        await this.call_function(tool_call)
       } else if (tool_call.status === "completed") {
         return new BotMessage(response.output_text)
       } else {
@@ -32,12 +32,12 @@ export class OpenAIBot extends ChatBot {
     return await this.send_prompt()
   }
 
-  private call_function(tool_call: ResponseFunctionToolCall) {
+  private async call_function(tool_call: ResponseFunctionToolCall) {
     const fn = this.functions[tool_call.name]
 
     const call = new FunctionCallMessage(fn, tool_call)
     this.history.push(call)
-    this.history.push(call.invoke())
+    this.history.push(await call.invoke())
   }
 
   private request() {

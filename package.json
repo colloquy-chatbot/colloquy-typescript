@@ -1,6 +1,6 @@
 {
   "name": "colloquy_chatbot",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "./src/colloquy.ts",
   "type": "module",
   "devDependencies": {

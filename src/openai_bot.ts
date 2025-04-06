@@ -46,7 +46,6 @@ export class OpenAIBot extends ChatBot {
       input: this.history.map(m => m.input),
       tools: Object.values(this.functions).map((fn) => fn.tool),
     }
-    console.warn(req)
     return req
   }
 }

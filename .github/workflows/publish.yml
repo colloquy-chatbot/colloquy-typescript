@@ -32,11 +32,16 @@ jobs:
       
       - name: Setup npm authentication
         run: |
+          # Try direct login first
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_AUTH_TOKEN }}" > ~/.npmrc
-          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
-          echo "always-auth=true" >> ~/.npmrc
+          
+          # Let's try solving it specifically from Bun's perspective
+          bunx npm config set //registry.npmjs.org/:_authToken "${{ secrets.NPM_AUTH_TOKEN }}"
       
       - name: Publish package
-        run: bun publish --access public
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+        run: |
+          # Check if we're authenticated
+          npm whoami || echo "Authentication still not working"
+          
+          # Try publishing with npm directly if bun has issues
+          npm publish --access public

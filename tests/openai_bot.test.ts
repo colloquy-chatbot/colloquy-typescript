@@ -2,7 +2,7 @@ import { describe, test, expect, mock } from "bun:test"
 import { BotMessage, OpenAIBot, UserMessage, PromptFunction, UnnamedFunctionError } from "../src/colloquy"
 import type { EasyInputMessage, ResponseFunctionToolCall, ResponseInputItem, Tool } from "openai/resources/responses/responses.mjs"
 import { FunctionCallMessage, FunctionResultMessage } from "../src/message"
-import { parameter_names, type Parameter } from "../src/function"
+import { parameters_for, type Parameter } from "../src/function"
 
 
 class MockOpenAIBot extends OpenAIBot {
@@ -137,19 +137,19 @@ describe("functions", () => {
   })
 
   test("excludes spaces when extracting function names", () => {
-    expect(parameter_names((_a: any, _b: any) => {})).toEqual({
-      _a: { type: "any" },
-      _b: { type: "any" },
-    })
+    expect(parameters_for((_a: any, _b: any) => {})).toEqual([
+      ["_a", { type: "any" }],
+      ["_b", { type: "any" }],
+    ])
   })
 
   test("handles default parameters", () => {
-    expect(parameter_names((_a: any, _b = true, _c = 1) => {}))
-      .toEqual({
-        _a: { type: "any" },
-        _b: { type: "boolean" },
-        _c: { type: "number" },
-      })
+    expect(parameters_for((_a: any, _b = true, _c = 1) => {}))
+      .toEqual([
+        ["_a", { type: "any" }],
+        ["_b", { type: "boolean" }],
+        ["_c", { type: "number" }],
+      ])
   })
 
   test("attaches provided information", () => {
@@ -236,7 +236,7 @@ describe("functions", () => {
       type: "function_call",
       call_id: "12345",
       name: "test",
-      arguments: "",
+      arguments: "{}",
     }
 
     bot.mock_responses([

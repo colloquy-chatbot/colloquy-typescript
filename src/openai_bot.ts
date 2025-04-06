@@ -7,8 +7,8 @@ import type { ResponseFunctionToolCall } from "openai/resources/responses/respon
 
 export class OpenAIBot extends ChatBot {
   openai: OpenAI
-  functions: { [name: string]: PromptFunction }
-  constructor({ functions = [], ...args }: ConstructorParameters<typeof ChatBot>[0] & { functions?: PromptFunction[] } = {}) {
+  functions: { [name: string]: PromptFunction<any> }
+  constructor({ functions = [], ...args }: ConstructorParameters<typeof ChatBot>[0] & { functions?: PromptFunction<any>[] } = {}) {
     super(args)
     this.openai = new OpenAI()
     this.functions = Object.fromEntries(functions.map((f) => [f.name, f]))

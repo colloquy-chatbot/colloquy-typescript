@@ -15,16 +15,19 @@ type ParameterOverlay = {
 }
 type ParametersOverlay = { [name: string]: ParameterOverlay }
 
-export class PromptFunction {
-  fn: (...args: any) => any
+export class PromptFunction<Return> {
+  fn: (...args: any[]) => Return
   name: string
   private description: string | undefined
   private parameters: ParametersOverlay
-  constructor(fn: (args: any) => any, { name, description, parameters = {} }: {
-    name?: string
-    description?: string
-    parameters?: ParametersOverlay
-  } = {}) {
+  constructor(
+    fn: (...args: any[]) => Return,
+    { name, description, parameters = {} }: {
+      name?: string
+      description?: string
+      parameters?: ParametersOverlay
+    } = {}
+  ) {
     if (!name && fn.name == "") throw new UnnamedFunctionError()
 
     this.fn = fn
@@ -33,39 +36,37 @@ export class PromptFunction {
     this.parameters = parameters
   }
 
+  async invoke(params: { [name: string]: any }): Promise<string> {
+    const result = await this.fn(...parameters_for(this.fn, this.parameters).map(
+      ([name, _param]) => params[name],
+    ))
+
+    if (typeof result === "string") return result
+
+    return JSON.stringify(result)
+  }
+
   get tool(): FunctionTool {
     const tool: FunctionTool = {
       type: "function",
       name: this.name,
-      parameters: this.build_parameters(),
+      parameters: Object.fromEntries(parameters_for(this.fn, this.parameters)),
       strict: true,
     }
     if (this.description) tool.description = this.description
 
     return tool
   }
-
-  private build_parameters(): Parameters {
-    const parameters: Parameters = {}
-
-    for (const [name, value] of Object.entries(parameter_names(this.fn, this.parameters))) {
-      parameters[name] = value
-    }
-
-    return parameters
-  }
 }
 
-export function parameter_names(fn: (...args: any[]) => any, overlay: ParametersOverlay = {}) {
-  const params: Parameters = {}
+export function parameters_for(fn: (...args: any[]) => any, overlay: ParametersOverlay = {}) {
   let param_string = fn.toString().replace(/^[^(]*\((.*)\)[^)]*$/s, "$1")
-  if (param_string) {
-    param_string = param_string.replace(/\s/g, "")
-    for (const param of extract_params(param_string)) {
-      augment_param(params, param, overlay)
-    }
-  }
-  return params
+  if (!param_string) return []
+
+  param_string = param_string.replace(/\s/g, "")
+  return extract_params(param_string).map(
+    (param) => augment_param(param, overlay),
+  )
 }
 
 function extract_params(params_string: string) {
@@ -95,8 +96,8 @@ function extract_params(params_string: string) {
   return params
 }
 
-function augment_param(params: Parameters, { name, def }: { name: string, def: string }, overlay: ParametersOverlay) {
-  params[name] = parameter_for(def, overlay[name])
+function augment_param({ name, def }: { name: string, def: string }, overlay: ParametersOverlay): [string, Parameter] {
+  return [name, parameter_for(def, overlay[name])]
 }
 
 function parameter_for(def: string, overlay: ParameterOverlay) {

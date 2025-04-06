@@ -45,10 +45,10 @@ export class BotMessage extends Message {
   }
 }
 
-export class FunctionCallMessage extends Message {
-  fn: PromptFunction
+export class FunctionCallMessage<T> extends Message {
+  fn: PromptFunction<T>
   tool_call: ResponseFunctionToolCall
-  constructor(fn: PromptFunction, tool_call: ResponseFunctionToolCall) {
+  constructor(fn: PromptFunction<T>, tool_call: ResponseFunctionToolCall) {
     super()
     this.fn = fn
     this.tool_call = tool_call
@@ -59,12 +59,15 @@ export class FunctionCallMessage extends Message {
       type: "function_call",
       call_id: "12345",
       name: "test",
-      arguments: "",
+      arguments: this.tool_call.arguments,
     }
   }
 
   async invoke(): Promise<FunctionResultMessage> {
-    return new FunctionResultMessage(this.tool_call.call_id, await this.fn.fn())
+    return new FunctionResultMessage(
+      this.tool_call.call_id,
+      await this.fn.invoke(JSON.parse(this.tool_call.arguments))
+    )
   }
 }
 

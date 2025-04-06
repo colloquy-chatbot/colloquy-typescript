@@ -49,11 +49,23 @@ export class PromptFunction<Return> {
     return JSON.stringify(result)
   }
 
-  get tool(): FunctionTool {
-    const tool: FunctionTool = {
+  get tool(): FunctionTool & { parameters: {
+    properties: Record<string, unknown>,
+    additionalProperties: boolean,
+    required: string[],
+  } } {
+    const tool: FunctionTool & { parameters: {
+    properties: Record<string, unknown>,
+    additionalProperties: boolean,
+    required: string[],
+  } } = {
       type: "function",
       name: this.name,
-      parameters: Object.fromEntries(parameters_for(this.fn, this.parameters)),
+      parameters: {
+        properties: Object.fromEntries(parameters_for(this.fn, this.parameters)),
+        additionalProperties: false,
+        required: Object.keys(this.parameters),
+      },
       strict: true,
     }
     if (this.description) tool.description = this.description

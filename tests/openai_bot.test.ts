@@ -108,7 +108,11 @@ describe("functions", () => {
     expect(bot.requests.at(-1)!.tools).toEqual([{
       type: "function",
       name: fn.tool.name,
-      parameters: {},
+      parameters: {
+        properties: {},
+        additionalProperties: false,
+        required: [],
+      },
       strict: true,
     }])
   })
@@ -133,7 +137,7 @@ describe("functions", () => {
 
   test("a parameter is included", () => {
     const fn = new PromptFunction(function test(_a: unknown) {})
-    expect(fn.tool.parameters["_a"]).toEqual({ type: "any" })
+    expect(fn.tool.parameters.properties["_a"]).toEqual({ type: "any" })
   })
 
   test("excludes spaces when extracting function names", () => {
@@ -156,12 +160,12 @@ describe("functions", () => {
     const fn = new PromptFunction(function test(_a: unknown) {}, {
       parameters: { "_a": { type: "string" }}
     })
-    expect(fn.tool.parameters["_a"]).toEqual({ type: "string" })
+    expect(fn.tool.parameters.properties["_a"]).toEqual({ type: "string" })
   })
 
   test("detects an object correctly", () => {
     const fn = new PromptFunction(function test(_a = { foo: 1 }) {})
-    const param = fn.tool.parameters["_a"] as Parameter
+    const param = fn.tool.parameters.properties["_a"] as Parameter
     expect(param.type).toEqual("object")
     expect(param.properties).toEqual({
       foo: { type: "number" }
@@ -170,7 +174,7 @@ describe("functions", () => {
 
   test("detects a nested object correctly", () => {
     const fn = new PromptFunction(function test(_a = { foo: { bar: 1 } }) {})
-    const param = fn.tool.parameters["_a"] as Parameter
+    const param = fn.tool.parameters.properties["_a"] as Parameter
     expect(param.type).toEqual("object")
     expect(param.properties).toEqual({
       foo: {
@@ -184,7 +188,7 @@ describe("functions", () => {
 
   test("null parameter", () => {
     const fn = new PromptFunction(function test(_null = null) {})
-    expect((fn.tool.parameters["_null"] as Parameter).type)
+    expect((fn.tool.parameters.properties["_null"] as Parameter).type)
       .toEqual("null")
   })
 
@@ -193,7 +197,7 @@ describe("functions", () => {
     const fn = new PromptFunction(function test(_a = 1) {}, { parameters: {
       _a: { description }
     } })
-    const param = fn.tool.parameters["_a"] as Parameter
+    const param = fn.tool.parameters.properties["_a"] as Parameter
     expect(param.description).toEqual(description)
     expect(param.type).toEqual("number")
   })
@@ -212,7 +216,7 @@ describe("functions", () => {
     } })
     const param = (
       (
-        fn.tool.parameters["_a"] as Parameter
+        fn.tool.parameters.properties["_a"] as Parameter
       ).properties!["b"] as Parameter
     ).properties!["c"] as Parameter
     expect(param.description).toEqual(description)
@@ -221,7 +225,7 @@ describe("functions", () => {
 
   test("commas in nested definitions", () => {
     const fn = new PromptFunction(function test(_a = { b: 1, c: "foo" }) {})
-    expect(Object.keys(fn.tool.parameters)).toEqual(["_a"])
+    expect(Object.keys(fn.tool.parameters.properties)).toEqual(["_a"])
   })
 
   test("calls a function when AI requests it", async () => {

@@ -27,4 +27,5 @@ When the user corrects a suggested command, record it here for later use.
 - Package is auto-published via GitHub Actions when:
   1. Changes are pushed to `main` branch
   2. `package.json` was modified
+- The workflow can also be manually triggered from the GitHub Actions tab
 - Set up `NPM_AUTH_TOKEN` in your repository secrets

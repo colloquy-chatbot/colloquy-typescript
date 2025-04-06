@@ -41,10 +41,12 @@ export class OpenAIBot extends ChatBot {
   }
 
   private request() {
-    return {
+    const req = {
       model: "gpt-4o-mini",
       input: this.history.map(m => m.input),
       tools: Object.values(this.functions).map((fn) => fn.tool),
     }
+    console.warn(req)
+    return req
   }
 }

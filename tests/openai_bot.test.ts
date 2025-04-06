@@ -109,6 +109,7 @@ describe("functions", () => {
       type: "function",
       name: fn.tool.name,
       parameters: {
+        type: "object",
         properties: {},
         additionalProperties: false,
         required: [],

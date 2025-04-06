@@ -55,12 +55,7 @@ export class FunctionCallMessage<T> extends Message {
   }
 
   get input(): ResponseInputItem {
-    return {
-      type: "function_call",
-      call_id: "12345",
-      name: "test",
-      arguments: this.tool_call.arguments,
-    }
+    return this.tool_call
   }
 
   async invoke(): Promise<FunctionResultMessage> {
@@ -83,8 +78,8 @@ export class FunctionResultMessage extends Message {
   get input(): ResponseInputItem {
     return {
       type: "function_call_output",
-      call_id: "12345",
-      output: "test",
+      call_id: this.call_id,
+      output: this.output,
     }
   }
 }

@@ -3,6 +3,14 @@ import { parseScript, type Program } from "esprima"
 import type { BaseNode, FunctionDeclaration, Pattern, ExpressionStatement, ArrowFunctionExpression, Identifier } from "estree"
 import { generate } from "escodegen"
 
+type StrictFunctionTool = FunctionTool & {
+  parameters: {
+    properties: Record<string, unknown>,
+    additionalProperties: boolean,
+    required: string[],
+  }
+}
+
 export class UnnamedFunctionError extends Error {}
 
 export type Parameter = {
@@ -49,19 +57,12 @@ export class PromptFunction<Return> {
     return JSON.stringify(result)
   }
 
-  get tool(): FunctionTool & { parameters: {
-    properties: Record<string, unknown>,
-    additionalProperties: boolean,
-    required: string[],
-  } } {
-    const tool: FunctionTool & { parameters: {
-    properties: Record<string, unknown>,
-    additionalProperties: boolean,
-    required: string[],
-  } } = {
+  get tool(): StrictFunctionTool {
+    const tool: StrictFunctionTool = {
       type: "function",
       name: this.name,
       parameters: {
+        type: "object",
         properties: Object.fromEntries(parameters_for(this.fn, this.parameters)),
         additionalProperties: false,
         required: Object.keys(this.parameters),

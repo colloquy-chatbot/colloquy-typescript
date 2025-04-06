@@ -33,6 +33,10 @@ jobs:
       - name: Setup npm authentication
         run: |
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_AUTH_TOKEN }}" > ~/.npmrc
+          echo "registry=https://registry.npmjs.org/" >> ~/.npmrc
+          echo "always-auth=true" >> ~/.npmrc
       
       - name: Publish package
         run: bun publish --access public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

@@ -1,4 +1,7 @@
 import type { FunctionTool } from "openai/resources/responses/responses.mjs"
+import { parseScript, type Program } from "esprima"
+import type { BaseNode, FunctionDeclaration, Pattern, ExpressionStatement, ArrowFunctionExpression, Identifier } from "estree"
+import { generate } from "escodegen"
 
 export class UnnamedFunctionError extends Error {}
 
@@ -60,52 +63,81 @@ export class PromptFunction<Return> {
 }
 
 export function parameters_for(fn: (...args: any[]) => any, overlay: ParametersOverlay = {}) {
-  let param_string = fn.toString().replace(/^[^(]*\((.*)\)[^)]*$/s, "$1")
-  if (!param_string) return []
+  const ast = parseScript(fn.toString())
 
-  param_string = param_string.replace(/\s/g, "")
-  return extract_params(param_string).map(
+  let fn_ast = (
+    find_node(ast, "FunctionDeclaration") || find_node(ast, "ArrowFunctionExpression")
+  ) as FunctionDeclaration | ArrowFunctionExpression | undefined
+
+  return extract_params(fn_ast?.params || []).map(
     (param) => augment_param(param, overlay),
   )
 }
 
-function extract_params(params_string: string) {
+function find_node(ast: BaseNode, type: string): BaseNode | undefined {
+  if (ast.type == type) return ast
+
+  if (ast.type == "Program") {
+    const program = ast as Program
+    for (const node of program.body) {
+      const search = find_node(node, type)
+      if (search) return search
+    }
+  }
+
+  if (ast.type == "ExpressionStatement") {
+    const expression = ast as ExpressionStatement
+    return find_node(expression.expression, type)
+  }
+
+  return undefined
+}
+
+function extract_params(ast: Pattern[]) {
   const params: {
     name: string
-    def: string
+    def?: BaseNode
   }[] = []
-  let level = 0
-  for (const param_string of params_string.split(/,\s*/)) {
-    if (level > 0) {
-      const param = params[params.length - 1]
-      param.def += `,${param_string}`
+
+  for (const prm of ast) {
+    let name: string
+    let def: BaseNode | undefined
+    if (prm.type == "Identifier") {
+      name = prm.name
+    } else if (prm.type == "AssignmentPattern") {
+      name = (prm.left as Identifier).name
+      def = prm.right
     } else {
-      const [name, def] = param_string.split("=")
-      params.push({ name, def })
+      throw new Error(`Unexpected node type: ${prm.type}`)
     }
 
-    level += [...param_string].reduce(
-      (count, char) => char == "{"
-        ? count + 1
-        : char == "}"
-        ? count - 1
-        : count,
-      0,
-    )
+    params.push({
+      name,
+      def,
+    })
   }
+
   return params
 }
 
-function augment_param({ name, def }: { name: string, def: string }, overlay: ParametersOverlay): [string, Parameter] {
+function augment_param({ name, def }: { name: string, def?: BaseNode }, overlay: ParametersOverlay): [string, Parameter] {
   return [name, parameter_for(def, overlay[name])]
 }
 
-function parameter_for(def: string, overlay: ParameterOverlay) {
+function parameter_for(def: BaseNode | undefined, overlay: ParameterOverlay) {
   let type = "any"
   let properties;
 
   if (def) {
-    const result = eval(`(${def})`)
+    let result;
+
+    const generated = generate(def)
+    try {
+      result = eval(`(${generated})`)
+    } catch(e) {
+      throw new Error(`Problem evaluating \`(${generated})\`: ${e}`)
+    }
+
     type = typeof result
 
     if (!result) {

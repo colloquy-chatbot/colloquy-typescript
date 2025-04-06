@@ -30,3 +30,12 @@ test("provides object return values as strings", async () => {
   })
   expect(await fn.invoke({})).toEqual('{"a":1}')
 })
+
+test("is able to extract parameters of functions with a body containing a comma", async () => {
+  let input: boolean = false
+  const fn = new PromptFunction(function test(a="a") {
+    input = ["a", "b"][1] == a
+  })
+  await fn.invoke({ a: "b" })
+  expect(input).toBeTrue()
+})

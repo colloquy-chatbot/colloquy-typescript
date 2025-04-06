@@ -1,15 +1,19 @@
 {
   "name": "colloquy_chatbot",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "main": "./src/colloquy.ts",
   "type": "module",
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/escodegen": "^0.0.10",
+    "@types/esprima": "^4.0.1"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "escodegen": "^2.1.0",
+    "esprima": "^4.0.1",
     "openai": "^4.91.1"
   }
 }

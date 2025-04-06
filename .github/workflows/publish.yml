@@ -25,6 +25,8 @@ jobs:
       
       - name: Run tests
         run: bun test
+        env:
+          OPENAI_API_KEY: dummy-key-for-ci
       
       - name: Setup npm authentication
         run: |

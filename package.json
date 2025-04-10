@@ -1,6 +1,6 @@
 {
   "name": "colloquy_chatbot",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "main": "./src/colloquy.ts",
   "type": "module",
   "devDependencies": {
@@ -12,6 +12,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
     "escodegen": "^2.1.0",
     "esprima": "^4.0.1",
     "openai": "^4.91.1"

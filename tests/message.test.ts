@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test"
-import { FunctionCallMessage } from "../src/message"
+import { FunctionCallMessage } from "../src/openai/message"
 import { PromptFunction } from "../src/function"
 
 describe("FunctionCallMessage", () => {

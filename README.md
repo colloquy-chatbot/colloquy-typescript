@@ -18,16 +18,21 @@ yarn add colloquy_chatbot
 ## Quick Start
 
 ```typescript
-import { OpenAIBot, PromptFunction } from "colloquy_chatbot";
+import { OpenAIBot, ClaudeBot, PromptFunction } from "colloquy_chatbot";
 
 // Create a basic OpenAI chatbot
-const bot = new OpenAIBot({
+const openaiBot = new OpenAIBot({
+  instructions: "You are a helpful assistant."
+});
+
+// Or use Claude
+const claudeBot = new ClaudeBot({
   instructions: "You are a helpful assistant."
 });
 
 // Send a message and get a response
-const response = await bot.prompt("Hello, can you help me?");
-console.log(response); // OpenAI's response
+const response = await openaiBot.prompt("Hello, can you help me?");
+console.log(response); // Bot's response
 
 // Create a chatbot with function calling
 function getWeather(location = "New York") {
@@ -57,6 +62,24 @@ The main chatbot implementation that uses OpenAI's API:
 import { OpenAIBot } from "colloquy_chatbot";
 
 const bot = new OpenAIBot({
+  instructions: "You are a helpful assistant." // Optional system message
+});
+
+const response = await bot.prompt("Hello!");
+console.log(response);
+
+// Access conversation history
+console.log(bot.history);
+```
+
+### ClaudeBot
+
+The chatbot implementation that uses Anthropic's Claude API:
+
+```typescript
+import { ClaudeBot } from "colloquy_chatbot";
+
+const bot = new ClaudeBot({
   instructions: "You are a helpful assistant." // Optional system message
 });
 
@@ -100,7 +123,9 @@ console.log(await bot.prompt("Hello")); // "olleH"
 
 ## Function Calling
 
-Colloquy makes it easy to enable function calling with OpenAI:
+Colloquy makes it easy to enable function calling with both OpenAI and Claude:
+
+### With OpenAI
 
 ```typescript
 import { OpenAIBot, PromptFunction } from "colloquy_chatbot";
@@ -124,6 +149,34 @@ const bot = new OpenAIBot({
 });
 
 // The AI can now use the function when appropriate
+const response = await bot.prompt("What's the area of a 5x3 rectangle?");
+console.log(response);
+```
+
+### With Claude
+
+```typescript
+import { ClaudeBot, PromptFunction } from "colloquy_chatbot";
+
+// Define a function
+function calculateArea(length = 1, width = 1) {
+  return length * width;
+}
+
+// Create a bot with the function
+const bot = new ClaudeBot({
+  functions: [
+    new PromptFunction(calculateArea, {
+      description: "Calculate the area of a rectangle",
+      parameters: {
+        length: { description: "The length of the rectangle" },
+        width: { description: "The width of the rectangle" }
+      }
+    })
+  ]
+});
+
+// Claude can now use the function when appropriate
 const response = await bot.prompt("What's the area of a 5x3 rectangle?");
 console.log(response);
 ```
@@ -158,6 +211,7 @@ Positional arguments get translated into an object before being sent to OpenAI, 
 ### Environment Variables
 
 - `OPENAI_API_KEY`: Required for using OpenAIBot
+- `ANTHROPIC_API_KEY`: Required for using ClaudeBot
 
 ## License
 

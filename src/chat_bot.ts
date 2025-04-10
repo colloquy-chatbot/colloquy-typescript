@@ -1,7 +1,7 @@
-import { Message, BotMessage, UserMessage } from "./message";
+import type { Message, TextMessage } from "./message";
 
-export abstract class ChatBot {
-  history: Message[]
+export abstract class ChatBot<M extends Message, TM extends TextMessage & M> {
+  history: M[]
   instructions: string | undefined;
 
   constructor({ instructions }: { instructions?: string } = {}) {
@@ -10,7 +10,7 @@ export abstract class ChatBot {
   }
 
   async prompt(content: string) {
-    const message = new UserMessage(content)
+    const message = this.user(content)
 
     this.history.push(message)
     const response = await this.send_prompt()
@@ -19,5 +19,6 @@ export abstract class ChatBot {
     return response.text
   }
 
-  abstract send_prompt(): Promise<BotMessage>
+  abstract send_prompt(): Promise<TM>
+  abstract user(text: string): M
 }

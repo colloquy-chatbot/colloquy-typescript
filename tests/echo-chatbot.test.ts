@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { EchoBot, UserMessage, BotMessage } from "../src/colloquy"
+import { EchoBot } from "../src/colloquy"
 
 test("create a simple echo chatbot", async () => {
   const bot = new EchoBot()
@@ -9,7 +9,7 @@ test("create a simple echo chatbot", async () => {
 test("includes history of previous prompts", async () => {
   const bot = new EchoBot()
   await bot.prompt("hello")
-  expect(bot.history).toEqual([new UserMessage("hello"), new BotMessage("hello")])
+  expect(bot.history.map((m) => m.text)).toEqual(["hello", "hello"])
 })
 
 test("add instructions in constructor", () => {

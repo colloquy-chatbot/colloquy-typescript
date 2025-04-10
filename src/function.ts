@@ -1,15 +1,6 @@
-import type { FunctionTool } from "openai/resources/responses/responses.mjs"
 import { parseScript, type Program } from "esprima"
 import type { BaseNode, FunctionDeclaration, Pattern, ExpressionStatement, ArrowFunctionExpression, Identifier } from "estree"
 import { generate } from "escodegen"
-
-type StrictFunctionTool = FunctionTool & {
-  parameters: {
-    properties: Record<string, unknown>,
-    additionalProperties: boolean,
-    required: string[],
-  }
-}
 
 export class UnnamedFunctionError extends Error {}
 
@@ -29,8 +20,8 @@ type ParametersOverlay = { [name: string]: ParameterOverlay }
 export class PromptFunction<Return> {
   fn: (...args: any[]) => Return
   name: string
-  private description: string | undefined
-  private parameters: ParametersOverlay
+  description: string | undefined
+  parameters: ParametersOverlay
   constructor(
     fn: (...args: any[]) => Return,
     { name, description, parameters = {} }: {
@@ -47,31 +38,34 @@ export class PromptFunction<Return> {
     this.parameters = parameters
   }
 
+  get object_spec() {
+    return {
+      type: "object",
+      properties: this.properties,
+      required: this.parameter_names,
+    }
+  }
+
+  get properties() {
+    return Object.fromEntries(parameters_for(this.fn, this.parameters))
+  }
+
+  get parameter_names() {
+    return parameters_for(this.fn, this.parameters).map(
+      ([name, _param]) => name
+    )
+  }
+
   async invoke(params: { [name: string]: any }): Promise<string> {
-    const result = await this.fn(...parameters_for(this.fn, this.parameters).map(
-      ([name, _param]) => params[name],
-    ))
+    const result = await this.fn(...this.parameter_ordering(params))
 
     if (typeof result === "string") return result
 
     return JSON.stringify(result)
   }
 
-  get tool(): StrictFunctionTool {
-    const tool: StrictFunctionTool = {
-      type: "function",
-      name: this.name,
-      parameters: {
-        type: "object",
-        properties: Object.fromEntries(parameters_for(this.fn, this.parameters)),
-        additionalProperties: false,
-        required: Object.keys(this.parameters),
-      },
-      strict: true,
-    }
-    if (this.description) tool.description = this.description
-
-    return tool
+  private parameter_ordering(params: { [name: string]: any }) {
+    return this.parameter_names.map((name) => params[name])
   }
 }
 

@@ -10,6 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run tests matching pattern: `bun test --test-name-pattern "pattern"`
 - Show test coverage: `bun test --coverage`
 - Publish package: `bun publish --access public`
+- TypeScript typecheck: `bun x tsc --noEmit`
 
 When the user corrects a suggested command, record it here for later use.
 

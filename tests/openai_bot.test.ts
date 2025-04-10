@@ -1,21 +1,25 @@
-import { describe, test, expect, mock } from "bun:test"
-import { BotMessage, OpenAIBot, UserMessage, PromptFunction, UnnamedFunctionError } from "../src/colloquy"
+import { describe, test, expect, type Mock } from "bun:test"
+import { OpenAIBot, PromptFunction, UnnamedFunctionError } from "../src/colloquy"
 import type { EasyInputMessage, ResponseFunctionToolCall, ResponseInputItem, Tool } from "openai/resources/responses/responses.mjs"
-import { FunctionCallMessage, FunctionResultMessage } from "../src/message"
+import { FunctionCallMessage, FunctionResultMessage } from "../src/openai/message"
 import { parameters_for, type Parameter } from "../src/function"
-
+import { mock_multiple_return_values, mock_requests } from "./utils"
+import { tool } from "../src/openai/function"
+import { RoleMessage } from "../src/message"
 
 class MockOpenAIBot extends OpenAIBot {
-  requests: {
-    model: string,
-    input: ResponseInputItem[]
-    tools?: Tool[]
-  }[]
-
+  mock!: Mock<any>
   constructor(...args: ConstructorParameters<typeof OpenAIBot>) {
     super(...args)
     this.mock_response_text("")
-    this.requests = []
+  }
+
+  get requests(): {
+    model: string,
+    input: ResponseInputItem[]
+    tools?: Tool[]
+  }[] {
+    return mock_requests(this.mock)
   }
 
   mock_response_text(output_text: string) {
@@ -33,12 +37,8 @@ class MockOpenAIBot extends OpenAIBot {
   }
 
   mock_responses(responses: any[]) {
-    // @ts-ignore: Getting the types to match properly is too painful to contemplate
-    this.openai.responses.create = mock(async (request) => {
-      this.requests.push(request)
-      if (responses.length == 0) throw new Error("expected a mocked response")
-      return responses.shift()
-    })
+    this.mock = mock_multiple_return_values(responses)
+    this.openai.responses.create = this.mock
   }
 }
 
@@ -53,7 +53,7 @@ test("includes history of previous prompts", async () => {
   const bot = new MockOpenAIBot()
   bot.mock_response_text("Hi!")
   await bot.prompt("hello")
-  expect(bot.history).toEqual([new UserMessage("hello"), new BotMessage("Hi!")])
+  expect(bot.history).toEqual([new RoleMessage("user", "hello"), new RoleMessage("assistant", "Hi!")])
 })
 
 test("sends instructions as a system message", async () => {
@@ -107,7 +107,7 @@ describe("functions", () => {
     await bot.prompt("test")
     expect(bot.requests.at(-1)!.tools).toEqual([{
       type: "function",
-      name: fn.tool.name,
+      name: tool(fn).name,
       parameters: {
         type: "object",
         properties: {},
@@ -125,7 +125,7 @@ describe("functions", () => {
 
   test("the name of a function is used", () => {
     const fn = new PromptFunction(function test() {})
-    expect(fn.tool.name).toEqual("test")
+    expect(tool(fn).name).toEqual("test")
   })
 
   test("a description is included", () => {
@@ -133,12 +133,12 @@ describe("functions", () => {
       description: "a test function",
     })
 
-    expect(fn.tool.description).toEqual("a test function")
+    expect(tool(fn).description).toEqual("a test function")
   })
 
   test("a parameter is included", () => {
     const fn = new PromptFunction(function test(_a: unknown) {})
-    expect(fn.tool.parameters.properties["_a"]).toEqual({ type: "any" })
+    expect(tool(fn).parameters.properties["_a"]).toEqual({ type: "any" })
   })
 
   test("excludes spaces when extracting function names", () => {
@@ -161,12 +161,12 @@ describe("functions", () => {
     const fn = new PromptFunction(function test(_a: unknown) {}, {
       parameters: { "_a": { type: "string" }}
     })
-    expect(fn.tool.parameters.properties["_a"]).toEqual({ type: "string" })
+    expect(tool(fn).parameters.properties["_a"]).toEqual({ type: "string" })
   })
 
   test("detects an object correctly", () => {
     const fn = new PromptFunction(function test(_a = { foo: 1 }) {})
-    const param = fn.tool.parameters.properties["_a"] as Parameter
+    const param = tool(fn).parameters.properties["_a"] as Parameter
     expect(param.type).toEqual("object")
     expect(param.properties).toEqual({
       foo: { type: "number" }
@@ -175,7 +175,7 @@ describe("functions", () => {
 
   test("detects a nested object correctly", () => {
     const fn = new PromptFunction(function test(_a = { foo: { bar: 1 } }) {})
-    const param = fn.tool.parameters.properties["_a"] as Parameter
+    const param = tool(fn).parameters.properties["_a"] as Parameter
     expect(param.type).toEqual("object")
     expect(param.properties).toEqual({
       foo: {
@@ -189,7 +189,7 @@ describe("functions", () => {
 
   test("null parameter", () => {
     const fn = new PromptFunction(function test(_null = null) {})
-    expect((fn.tool.parameters.properties["_null"] as Parameter).type)
+    expect((tool(fn).parameters.properties["_null"] as Parameter).type)
       .toEqual("null")
   })
 
@@ -198,7 +198,7 @@ describe("functions", () => {
     const fn = new PromptFunction(function test(_a = 1) {}, { parameters: {
       _a: { description }
     } })
-    const param = fn.tool.parameters.properties["_a"] as Parameter
+    const param = tool(fn).parameters.properties["_a"] as Parameter
     expect(param.description).toEqual(description)
     expect(param.type).toEqual("number")
   })
@@ -217,7 +217,7 @@ describe("functions", () => {
     } })
     const param = (
       (
-        fn.tool.parameters.properties["_a"] as Parameter
+        tool(fn).parameters.properties["_a"] as Parameter
       ).properties!["b"] as Parameter
     ).properties!["c"] as Parameter
     expect(param.description).toEqual(description)
@@ -226,7 +226,7 @@ describe("functions", () => {
 
   test("commas in nested definitions", () => {
     const fn = new PromptFunction(function test(_a = { b: 1, c: "foo" }) {})
-    expect(Object.keys(fn.tool.parameters.properties)).toEqual(["_a"])
+    expect(Object.keys(tool(fn).parameters.properties)).toEqual(["_a"])
   })
 
   test("calls a function when AI requests it", async () => {
@@ -274,10 +274,10 @@ describe("functions", () => {
     ])
 
     expect(bot.history).toEqual([
-      new UserMessage("hi"),
+      new RoleMessage("user", "hi"),
       new FunctionCallMessage(fn, function_call_output),
       new FunctionResultMessage("12345", "test"),
-      new BotMessage("Hello"),
+      new RoleMessage("assistant", "Hello"),
     ])
   })
 })

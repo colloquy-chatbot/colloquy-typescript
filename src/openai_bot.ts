@@ -1,9 +1,9 @@
 import OpenAI from "openai"
 
 import { ChatBot } from "./chat_bot"
-import { FunctionCallMessage } from "./openai/message"
+import { FunctionCallMessage, ReasoningMessage } from "./openai/message"
 import type { PromptFunction } from "./function"
-import type { ResponseFunctionToolCall, ResponseInputItem } from "openai/resources/responses/responses.mjs"
+import type { ResponseCreateParams, ResponseFunctionToolCall, ResponseInputItem } from "openai/resources/responses/responses.mjs"
 import { tool } from "./openai/function"
 import { RoleMessage, type InputMessage } from "./message"
 
@@ -14,10 +14,18 @@ type IM = InputMessage<ResponseInputItem>
 export class OpenAIBot extends ChatBot<IM, RM> {
   openai: OpenAI
   functions: { [name: string]: PromptFunction<any> }
-  constructor({ functions = [], ...args }: ConstructorParameters<typeof ChatBot>[0] & { functions?: PromptFunction<any>[] } = {}) {
+  service_tier?: ResponseCreateParams["service_tier"]
+    model: string
+  constructor({ model = "gpt-4o-mini", service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot>[0] & {
+    model?: string
+    functions?: PromptFunction<any>[]
+    service_tier?: ResponseCreateParams["service_tier"]
+  } = {}) {
     super(args)
     this.openai = new OpenAI()
+    this.model = model
     this.functions = Object.fromEntries(functions.map((f) => [f.name, f]))
+    this.service_tier = service_tier
 
     if (this.instructions) this.history.push(new RoleMessage("system", this.instructions))
   }
@@ -25,13 +33,15 @@ export class OpenAIBot extends ChatBot<IM, RM> {
   async send_prompt(): Promise<RM> {
     const response = await this.openai.responses.create(this.request())
 
-    for (const tool_call of response.output || []) {
-      if (tool_call.type === "function_call") {
-        await this.call_function(tool_call)
-      } else if (tool_call.status === "completed") {
+    for (const output of response.output || []) {
+      if (output.type === "function_call") {
+        await this.call_function(output)
+      } else if (output.type === "reasoning") {
+        this.history.push(new ReasoningMessage(output.id, output.summary))
+      } else if (output.status === "completed") {
         return new RoleMessage("assistant", response.output_text)
       } else {
-        throw new Error(`Unhandled output type ${tool_call.type}`)
+        throw new Error(`Unhandled output type ${JSON.stringify(output)}`)
       }
     }
 
@@ -51,11 +61,14 @@ export class OpenAIBot extends ChatBot<IM, RM> {
   }
 
   private request() {
-    const req = {
-      model: "gpt-4o-mini",
+    const req: ResponseCreateParams = {
+      model: this.model,
       input: this.history.map(m => m.input),
       tools: Object.values(this.functions).map((fn) => tool(fn)),
     }
+
+    if (this.service_tier) req.service_tier = this.service_tier
+
     return req
   }
 }

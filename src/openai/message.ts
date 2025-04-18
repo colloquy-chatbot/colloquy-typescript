@@ -1,4 +1,4 @@
-import type { ResponseFunctionToolCall, ResponseInputItem } from "openai/resources/responses/responses.mjs"
+import type { ResponseFunctionToolCall, ResponseInputItem, ResponseReasoningItem } from "openai/resources/responses/responses.mjs"
 import type { PromptFunction } from "../function"
 import * as base from "../message"
 
@@ -31,6 +31,23 @@ export class FunctionResultMessage extends base.FunctionResultMessage implements
       type: "function_call_output",
       call_id: this.id,
       output: this.result,
+    }
+  }
+}
+
+export class ReasoningMessage implements base.InputMessage<ResponseInputItem> {
+  id: string
+  summary: ResponseReasoningItem.Summary[]
+  constructor(id: string, summary: ResponseReasoningItem.Summary[]) {
+    this.id = id
+    this.summary = summary
+  }
+
+  get input(): ResponseInputItem {
+    return {
+      type: "reasoning",
+      id: this.id,
+      summary: this.summary,
     }
   }
 }

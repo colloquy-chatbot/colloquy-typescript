@@ -1,7 +1,7 @@
 import { describe, test, expect, type Mock } from "bun:test"
 import { OpenAIBot, PromptFunction, UnnamedFunctionError } from "../src/colloquy"
 import type { EasyInputMessage, ResponseFunctionToolCall, ResponseInputItem, Tool } from "openai/resources/responses/responses.mjs"
-import { FunctionCallMessage, FunctionResultMessage } from "../src/openai/message"
+import { FunctionCallMessage, FunctionResultMessage, ReasoningMessage } from "../src/openai/message"
 import { parameters_for, type Parameter } from "../src/function"
 import { mock_multiple_return_values, mock_requests } from "./utils"
 import { tool } from "../src/openai/function"
@@ -280,4 +280,26 @@ describe("functions", () => {
       new RoleMessage("assistant", "Hello"),
     ])
   })
+})
+
+test("Includes reasoning in history", async () => {
+  const bot = new MockOpenAIBot()
+  bot.mock_responses([
+    {
+      output_text: "Hi",
+      output: [
+        {
+          "id": "id",
+          "type": "reasoning",
+          "summary": [],
+        },
+        {
+          type: "message",
+          status: "completed",
+        }
+      ],
+    }
+  ])
+  await bot.prompt("Hi")
+  expect(bot.history).toContainEqual(new ReasoningMessage("id", []))
 })

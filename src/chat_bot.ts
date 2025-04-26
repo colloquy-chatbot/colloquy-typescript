@@ -4,8 +4,8 @@ export abstract class ChatBot<M extends Message, TM extends TextMessage & M> {
   history: M[]
   instructions: string | undefined;
 
-  constructor({ instructions }: { instructions?: string } = {}) {
-    this.history = []
+  constructor({ instructions, history }: { instructions?: string, history?: M[] } = {}) {
+    this.history = history || []
     this.instructions = instructions
   }
 

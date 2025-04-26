@@ -20,8 +20,9 @@ export class ClaudeBot extends ChatBot<IM, RM> {
   }
 
   async send_prompt(): Promise<RM> {
-    if (this.debug) console.debug(this.request())
+    if (this.debug) console.debug("request", this.request())
     const response = await this.client.messages.create(this.request())
+    if (this.debug) console.debug("response", response)
 
     let needs_reply = false
     for (const content of response.content) {

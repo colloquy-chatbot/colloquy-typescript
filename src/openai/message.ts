@@ -26,11 +26,11 @@ export class FunctionCallMessage<ReturnValue> extends base.FunctionCallMessage<R
 }
 
 export class FunctionResultMessage extends base.FunctionResultMessage implements base.InputMessage<ResponseInputItem> {
-  get input(): ResponseInputItem {
+  get input(): ResponseInputItem.FunctionCallOutput {
     return {
       type: "function_call_output",
       call_id: this.id,
-      output: this.result,
+      output: this.result || "",
     }
   }
 }

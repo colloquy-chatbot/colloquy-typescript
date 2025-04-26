@@ -1,6 +1,6 @@
 import { describe, test, expect } from "bun:test"
-import { FunctionCallMessage } from "../src/openai/message"
-import { PromptFunction } from "../src/function"
+import { FunctionCallMessage } from "../../src/openai/message"
+import { PromptFunction } from "../../src/function"
 
 describe("FunctionCallMessage", () => {
   test("invoked function called with parameter", async () => {
@@ -56,5 +56,20 @@ describe("FunctionCallMessage", () => {
       call_id: "54321",
       output: "foo",
     })
+  })
+
+  test("functions with undefined results still produce output", async () => {
+    const fn = new FunctionCallMessage(
+      new PromptFunction(function test() {}),
+      {
+        arguments: "{}",
+        call_id: "1",
+        name: "test",
+        type: "function_call",
+      },
+    )
+
+    const result = await fn.invoke()
+    expect(result.input.output).toEqual("")
   })
 })

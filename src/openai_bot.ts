@@ -15,8 +15,8 @@ export class OpenAIBot extends ChatBot<IM, RM> {
   openai: OpenAI
   functions: { [name: string]: PromptFunction<any> }
   service_tier?: ResponseCreateParams["service_tier"]
-    model: string
-  constructor({ model = "gpt-4o-mini", service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot>[0] & {
+  model: string
+  constructor({ model = "gpt-4o-mini", service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM, RM>>[0] & {
     model?: string
     functions?: PromptFunction<any>[]
     service_tier?: ResponseCreateParams["service_tier"]
@@ -31,6 +31,7 @@ export class OpenAIBot extends ChatBot<IM, RM> {
   }
 
   async send_prompt(): Promise<RM> {
+    if (this.debug) console.debug(this.request())
     const response = await this.openai.responses.create(this.request())
 
     for (const output of response.output || []) {

@@ -60,6 +60,7 @@ export class OpenAIBot extends ChatBot<IM> {
     const fn = this.functions[tool_call.name]
 
     const call = new FunctionCallMessage(fn, tool_call)
+    call.invoke_fn()
     this.history.push(call)
   }
 

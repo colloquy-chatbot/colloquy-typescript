@@ -179,7 +179,7 @@ describe("functions", () => {
     expect(bot.history).toEqual([
       new RoleMessage("user", "hi"),
       new RoleMessage("assistant", "I'll call the test function as you requested."),
-      new FunctionCallMessage(fn, tool_use),
+      new FunctionCallMessage(fn, tool_use, "test"),
       new RoleMessage("assistant", "Hello"),
     ])
   })

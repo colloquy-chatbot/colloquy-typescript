@@ -36,12 +36,15 @@ export class RoleMessage<Role, Input> extends SimpleMessage implements InputMess
 
 export abstract class FunctionCallMessage<ReturnValue> {
   fn: PromptFunction<ReturnValue>
-  constructor(fn: PromptFunction<ReturnValue>) {
+  result?: string
+  constructor(fn: PromptFunction<ReturnValue>, result?: string) {
     this.fn = fn
+    this.result = result
   }
 
   async invoke_fn(): Promise<string> {
-    return this.fn.invoke(this.arguments)
+    this.result ||= await this.fn.invoke(this.arguments)
+    return this.result
   }
 
   abstract get arguments(): Record<string, any>

@@ -283,7 +283,7 @@ describe("functions", () => {
 
     expect(bot.history).toEqual([
       new RoleMessage("user", "hi"),
-      new FunctionCallMessage(fn, function_call_output),
+      new FunctionCallMessage(fn, function_call_output, "test"),
       new RoleMessage("assistant", "Hello"),
     ])
   })
@@ -310,4 +310,31 @@ test("Includes reasoning in history", async () => {
   ])
   await bot.prompt("Hi")
   expect(bot.history).toContainEqual(new ReasoningMessage("id", []))
+})
+
+test("Calls functions even with a completed status", async () => {
+  let called = false
+  const bot = new MockOpenAIBot({
+    functions: [new PromptFunction(function mark_called() { called = true })],
+  })
+  bot.mock_responses([
+    {
+      output_text: "Hi",
+      status: "completed",
+      output: [
+        {
+          type: "message",
+          status: "completed",
+        },
+        {
+          type: "function_call",
+          name: "mark_called",
+          arguments: "{}",
+          call_id: "id",
+        },
+      ],
+    }
+  ])
+  await bot.prompt("Hi")
+  expect(called).toBeTrue()
 })

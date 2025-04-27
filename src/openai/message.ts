@@ -17,8 +17,8 @@ export class OpenAIMessageFactory implements base.MessageFactory<IM> {
 
 export class FunctionCallMessage<ReturnValue> extends base.FunctionCallMessage<ReturnValue> implements base.InputMessage<ResponseInputItem> {
   tool_call: ResponseFunctionToolCall
-  constructor(fn: PromptFunction<ReturnValue>, tool_call: ResponseFunctionToolCall) {
-    super(fn)
+  constructor(fn: PromptFunction<ReturnValue>, tool_call: ResponseFunctionToolCall, result?: string) {
+    super(fn, result)
     this.tool_call = tool_call
   }
 

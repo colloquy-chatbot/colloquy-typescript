@@ -23,8 +23,8 @@ export class ClaudeMessageFactory implements base.MessageFactory<IM> {
 
 export class FunctionCallMessage<T> extends base.FunctionCallMessage<T> implements base.InputMessage<MessageParam> {
   content: ToolUseBlock
-  constructor(fn: PromptFunction<T>, content: ToolUseBlock) {
-    super(fn)
+  constructor(fn: PromptFunction<T>, content: ToolUseBlock, result?: string) {
+    super(fn, result)
     this.content = content
   }
 

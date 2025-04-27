@@ -338,3 +338,11 @@ test("Calls functions even with a completed status", async () => {
   await bot.prompt("Hi")
   expect(called).toBeTrue()
 })
+
+test("Provides a reply, even when the status is completed, if there is nothing but function calls in the output", () => {
+  const bot = new MockOpenAIBot()
+  expect(bot.needs_reply({
+    status: "completed",
+    output: [{ type: "function_call" }],
+  } as Response)).toBeTrue()
+})

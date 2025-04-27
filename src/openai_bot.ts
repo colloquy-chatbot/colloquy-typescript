@@ -3,7 +3,7 @@ import OpenAI from "openai"
 import { ChatBot } from "./chat_bot"
 import { FunctionCallMessage, OpenAIMessageFactory, ReasoningMessage } from "./openai/message"
 import type { PromptFunction } from "./function"
-import type { Response, ResponseCreateParams, ResponseFunctionToolCall, ResponseInputItem } from "openai/resources/responses/responses.mjs"
+import type { Response, ResponseCreateParams, ResponseFunctionToolCall, ResponseInputItem, ResponseStatus } from "openai/resources/responses/responses.mjs"
 import { tool } from "./openai/function"
 import { RoleMessage, type InputMessage } from "./message"
 
@@ -49,11 +49,16 @@ export class OpenAIBot extends ChatBot<IM> {
       }
     }
 
-    if (response.status != "completed") {
+    if (this.needs_reply(response)) {
       return await this.send_prompt()
     } else {
       return this.history.pop() as RM
     }
+  }
+
+  needs_reply(response: Response) {
+    return response.status != "completed"
+      || response.output.every(o => o.type != "message")
   }
 
   private async call_function(tool_call: ResponseFunctionToolCall) {

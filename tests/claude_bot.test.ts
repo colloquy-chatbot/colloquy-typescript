@@ -1,10 +1,10 @@
 import { describe, test, expect, type Mock } from "bun:test"
 import { ClaudeBot } from "../src/claude_bot"
 import { mock_multiple_return_values, mock_requests } from "./utils"
-import type { MessageParam, ToolUseBlock } from "@anthropic-ai/sdk/resources/index.mjs"
+import type { ContentBlock, Message, MessageParam, TextBlock, ToolUseBlock } from "@anthropic-ai/sdk/resources/index.mjs"
 import { PromptFunction } from "../src/function"
 import { RoleMessage } from "../src/message"
-import { FunctionCallMessage, FunctionResultMessage } from "../src/claude/message"
+import { FunctionCallMessage } from "../src/claude/message"
 
 class MockClaudeBot extends ClaudeBot {
   mock!: Mock<any>
@@ -21,11 +21,7 @@ class MockClaudeBot extends ClaudeBot {
     this.mock_content([[this.text_content(text)]])
   }
 
-  text_content(text: string): {
-    type: string,
-    text: string,
-    citations: null,
-  } {
+  text_content(text: string): TextBlock {
     return {
       type: "text",
       text,
@@ -33,21 +29,18 @@ class MockClaudeBot extends ClaudeBot {
     }
   }
 
-  mock_content(content_list: {
-    type: string
-    text?: string
-    citations?: null
-    id?: string
-    name?: string
-    input?: any
-  }[][]) {
-    this.mock_responses(content_list.map((content) => ({
+  mock_content(content_list: ContentBlock[][]) {
+    this.mock_responses(content_list.map((content) => this.build_response(content)))
+  }
+
+  build_response(content: ContentBlock[], { stop_reason = "end_turn" }: Partial<Message> = {}) {
+    return {
       id: "msg_01MjsWDNTvZmFDAp7SQfY8im",
       type: "message",
       role: "assistant",
       model: "claude-3-7-sonnet-20250219",
       content: content,
-      stop_reason: "end_turn",
+      stop_reason,
       stop_sequence: null,
       usage: {
         input_tokens: 8,
@@ -55,7 +48,7 @@ class MockClaudeBot extends ClaudeBot {
         cache_read_input_tokens: 0,
         output_tokens: 26,
       },
-    })))
+    }
   }
 
   mock_responses<T>(responses: T[]) {
@@ -135,15 +128,16 @@ describe("functions", () => {
       "input": { foo: 2 }
     }
 
-    bot.mock_content([
-      [
+    bot.mock_responses([
+      bot.build_response([
         {
           type: "text",
           text: "I'll call the test function as you requested.",
+          citations: null,
         },
         tool_use,
-      ],
-      [bot.text_content("Hello")],
+      ], { stop_reason: "tool_use" }),
+      bot.build_response([bot.text_content("Hello")]),
     ])
 
     await bot.prompt("hi")
@@ -186,7 +180,6 @@ describe("functions", () => {
       new RoleMessage("user", "hi"),
       new RoleMessage("assistant", "I'll call the test function as you requested."),
       new FunctionCallMessage(fn, tool_use),
-      new FunctionResultMessage(tool_use.id, "test"),
       new RoleMessage("assistant", "Hello"),
     ])
   })

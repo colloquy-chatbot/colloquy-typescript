@@ -2,6 +2,25 @@ import type { MessageParam, ToolUseBlock } from "@anthropic-ai/sdk/resources/ind
 import * as base from "../message"
 import type { PromptFunction } from "../function"
 
+type Role = "user" | "assistant"
+
+export type RM = base.RoleMessage<Role, MessageParam>
+export type IM = base.InputMessage<MessageParam>
+
+export class ClaudeMessageFactory implements base.MessageFactory<IM> {
+  user(text: string): RM {
+    return new base.RoleMessage("user", text)
+  }
+
+  deserialize(content: any): RM[] {
+    if (content.type === "text") {
+      return [new base.RoleMessage("assistant", content.text)]
+    } else {
+      throw new Error(`Unhandled output type ${content.type}`);
+    }
+  }
+}
+
 export class FunctionCallMessage<T> extends base.FunctionCallMessage<T> implements base.InputMessage<MessageParam> {
   content: ToolUseBlock
   constructor(fn: PromptFunction<T>, content: ToolUseBlock) {
@@ -9,34 +28,24 @@ export class FunctionCallMessage<T> extends base.FunctionCallMessage<T> implemen
     this.content = content
   }
 
-  get input(): MessageParam {
-    return {
-      content: [this.content],
-      role: "assistant",
-    }
-  }
-
-  async invoke(): Promise<FunctionResultMessage> {
-    return new FunctionResultMessage(
-      this.content.id,
-      await this.invoke_fn()
-    )
+  async input(): Promise<MessageParam[]> {
+    return [
+      {
+        content: [this.content],
+        role: "assistant",
+      },
+      {
+        content: [{
+          type: "tool_result",
+          tool_use_id: this.content.id,
+          content: await this.invoke_fn(),
+        }],
+        role: "user",
+      }
+    ]
   }
 
   get arguments(): Record<string, any> {
     return this.content.input as Record<string, any>
-  }
-}
-
-export class FunctionResultMessage extends base.FunctionResultMessage implements base.InputMessage<MessageParam> {
-  get input(): MessageParam {
-    return {
-      content: [{
-        type: "tool_result",
-        tool_use_id: this.id,
-        content: this.result,
-      }],
-      role: "user",
-    }
   }
 }

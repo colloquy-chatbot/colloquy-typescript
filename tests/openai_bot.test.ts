@@ -1,7 +1,7 @@
 import { describe, test, expect, type Mock } from "bun:test"
 import { OpenAIBot, PromptFunction, UnnamedFunctionError } from "../src/colloquy"
-import type { EasyInputMessage, ResponseFunctionToolCall, ResponseInputItem, Tool } from "openai/resources/responses/responses.mjs"
-import { FunctionCallMessage, FunctionResultMessage, ReasoningMessage } from "../src/openai/message"
+import type { Response, EasyInputMessage, ResponseFunctionToolCall, ResponseCreateParams, ResponseInput } from "openai/resources/responses/responses.mjs"
+import { FunctionCallMessage, ReasoningMessage } from "../src/openai/message"
 import { parameters_for, type Parameter } from "../src/function"
 import { mock_multiple_return_values, mock_requests } from "./utils"
 import { tool } from "../src/openai/function"
@@ -14,11 +14,7 @@ class MockOpenAIBot extends OpenAIBot {
     this.mock_response_text("")
   }
 
-  get requests(): {
-    model: string,
-    input: ResponseInputItem[]
-    tools?: Tool[]
-  }[] {
+  get requests(): ResponseCreateParams[] {
     return mock_requests(this.mock)
   }
 
@@ -26,13 +22,34 @@ class MockOpenAIBot extends OpenAIBot {
     this.mock_responses([this.text_response(output_text)])
   }
 
-  text_response(output_text: string): any {
+  text_response(output_text: string): Response {
     return {
+      id: "12345",
+      status: "completed",
       output_text,
+      created_at: 0,
+      error: null,
+      incomplete_details: null,
+      instructions: null,
+      metadata: null,
+      model: "",
+      object: "response",
+      parallel_tool_calls: false,
+      temperature: null,
+      tool_choice: "none",
+      tools: [],
+      top_p: null,
       output: [{
+        id: "12345",
         type: "message",
         status: "completed",
-      }],
+        content: [{
+          type: "output_text",
+          annotations: [],
+          text: output_text,
+        }],
+        role: "assistant",
+      }]
     }
   }
 
@@ -56,27 +73,18 @@ test("includes history of previous prompts", async () => {
   expect(bot.history).toEqual([new RoleMessage("user", "hello"), new RoleMessage("assistant", "Hi!")])
 })
 
-test("sends instructions as a system message", async () => {
+test("sends instructions", async () => {
   const bot = new MockOpenAIBot({ instructions: "something" })
   bot.mock_response_text("Hi!")
   await bot.prompt("hello")
-  expect(bot.requests.at(-1)!.input).toEqual([
-    {
-      role: "system",
-      content: "something",
-    },
-    {
-      role: "user",
-      content: "hello",
-    },
-  ])
+  expect(bot.requests.at(-1)!.instructions).toEqual("something")
 })
 
 test("excludes system message when instructions are absent", async () => {
   const bot = new MockOpenAIBot()
   bot.mock_response_text("hi")
   await bot.prompt("hi")
-  expect(bot.requests.at(-1)!.input.map(
+  expect((bot.requests.at(-1)!.input as ResponseInput).map(
     (i) => (i as EasyInputMessage).role
   )).not.toContain("system")
 })
@@ -87,7 +95,7 @@ test("includes history in subsequent prompts", async () => {
   await bot.prompt("Hi!")
   bot.mock_response_text("That's nice")
   await bot.prompt("Good")
-  expect(bot.requests.at(-1)!.input.map(
+  expect((bot.requests.at(-1)!.input as ResponseInput).map(
     (i) => (i as EasyInputMessage).content
   )).toEqual([
     "Hi!",
@@ -276,7 +284,6 @@ describe("functions", () => {
     expect(bot.history).toEqual([
       new RoleMessage("user", "hi"),
       new FunctionCallMessage(fn, function_call_output),
-      new FunctionResultMessage("12345", "test"),
       new RoleMessage("assistant", "Hello"),
     ])
   })
@@ -287,6 +294,7 @@ test("Includes reasoning in history", async () => {
   bot.mock_responses([
     {
       output_text: "Hi",
+      status: "completed",
       output: [
         {
           "id": "id",

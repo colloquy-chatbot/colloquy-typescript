@@ -1,6 +1,7 @@
 import { describe, test, expect } from "bun:test"
 import { FunctionCallMessage } from "../../src/openai/message"
 import { PromptFunction } from "../../src/function"
+import type { ResponseInputItem } from "openai/resources/responses/responses.mjs"
 
 describe("FunctionCallMessage", () => {
   test("invoked function called with parameter", async () => {
@@ -16,11 +17,11 @@ describe("FunctionCallMessage", () => {
         type: "function_call",
       },
     )
-    await fn.invoke()
+    await fn.invoke_fn()
     expect(input).toEqual("b")
   })
 
-  test("invoked function called with parameter", () => {
+  test("invoked function called with parameter", async () => {
     const fn = new FunctionCallMessage(
       new PromptFunction(function test_fn(_a = "a") {}),
       {
@@ -31,7 +32,7 @@ describe("FunctionCallMessage", () => {
       },
     )
 
-    expect(fn.input).toEqual({
+    expect((await fn.input())[0]).toEqual({
       arguments: '{ "a": "b" }',
       call_id: "54321",
       name: "test_fn",
@@ -50,8 +51,8 @@ describe("FunctionCallMessage", () => {
       },
     )
 
-    const result = await fn.invoke()
-    expect(result.input).toEqual({
+    const input = await fn.input()
+    expect(input[1]).toEqual({
       type: "function_call_output",
       call_id: "54321",
       output: "foo",
@@ -69,7 +70,7 @@ describe("FunctionCallMessage", () => {
       },
     )
 
-    const result = await fn.invoke()
-    expect(result.input.output).toEqual("")
+    const input = await fn.input()
+    expect((input[1] as ResponseInputItem.FunctionCallOutput).output).toEqual("")
   })
 })

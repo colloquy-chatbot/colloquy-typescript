@@ -1,6 +1,6 @@
-import type { Message, TextMessage } from "./message";
+import type { Message, MessageFactory, TextMessage } from "./message";
 
-export abstract class ChatBot<M extends Message, TM extends TextMessage & M> {
+export abstract class ChatBot<M extends Message> {
   history: M[]
   instructions: string | undefined;
   debug: boolean;
@@ -11,8 +11,10 @@ export abstract class ChatBot<M extends Message, TM extends TextMessage & M> {
     this.debug = debug
   }
 
+  abstract get message_factory(): MessageFactory<M>
+
   async prompt(content: string) {
-    const message = this.user(content)
+    const message = this.message_factory.user(content)
 
     this.history.push(message)
     const response = await this.send_prompt()
@@ -21,6 +23,5 @@ export abstract class ChatBot<M extends Message, TM extends TextMessage & M> {
     return response.text
   }
 
-  abstract send_prompt(): Promise<TM>
-  abstract user(text: string): M
+  abstract send_prompt(): Promise<TextMessage & M>
 }

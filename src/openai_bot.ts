@@ -1,9 +1,9 @@
 import OpenAI from "openai"
 
 import { ChatBot } from "./chat_bot"
-import { FunctionCallMessage, ReasoningMessage } from "./openai/message"
+import { FunctionCallMessage, OpenAIMessageFactory, ReasoningMessage } from "./openai/message"
 import type { PromptFunction } from "./function"
-import type { ResponseCreateParams, ResponseFunctionToolCall, ResponseInputItem } from "openai/resources/responses/responses.mjs"
+import type { Response, ResponseCreateParams, ResponseFunctionToolCall, ResponseInputItem } from "openai/resources/responses/responses.mjs"
 import { tool } from "./openai/function"
 import { RoleMessage, type InputMessage } from "./message"
 
@@ -11,12 +11,12 @@ type Role = "user" | "system" | "assistant"
 type RM = RoleMessage<Role, ResponseInputItem>
 type IM = InputMessage<ResponseInputItem>
 
-export class OpenAIBot extends ChatBot<IM, RM> {
+export class OpenAIBot extends ChatBot<IM> {
   openai: OpenAI
   functions: { [name: string]: PromptFunction<any> }
   service_tier?: ResponseCreateParams["service_tier"]
   model: string
-  constructor({ model = "gpt-4o-mini", service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM, RM>>[0] & {
+  constructor({ model = "gpt-4o-mini", service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & {
     model?: string
     functions?: PromptFunction<any>[]
     service_tier?: ResponseCreateParams["service_tier"]
@@ -26,13 +26,15 @@ export class OpenAIBot extends ChatBot<IM, RM> {
     this.model = model
     this.functions = Object.fromEntries(functions.map((f) => [f.name, f]))
     this.service_tier = service_tier
+  }
 
-    if (this.instructions) this.history.push(new RoleMessage("system", this.instructions))
+  get message_factory() {
+    return new OpenAIMessageFactory()
   }
 
   async send_prompt(): Promise<RM> {
-    if (this.debug) console.debug("request", this.request())
-    const response = await this.openai.responses.create(this.request())
+    if (this.debug) console.debug("request", await this.request())
+    const response = await this.openai.responses.create(await this.request()) as Response
     if (this.debug) console.debug("response", response)
 
     for (const output of response.output || []) {
@@ -41,17 +43,17 @@ export class OpenAIBot extends ChatBot<IM, RM> {
       } else if (output.type === "reasoning") {
         this.history.push(new ReasoningMessage(output.id, output.summary))
       } else if (output.status === "completed") {
-        return new RoleMessage("assistant", response.output_text)
+        this.history.push(new RoleMessage("assistant", response.output_text))
       } else {
         throw new Error(`Unhandled output type ${JSON.stringify(output)}`)
       }
     }
 
-    return await this.send_prompt()
-  }
-
-  user(text: string): RM {
-    return new RoleMessage("user", text)
+    if (response.status != "completed") {
+      return await this.send_prompt()
+    } else {
+      return this.history.pop() as RM
+    }
   }
 
   private async call_function(tool_call: ResponseFunctionToolCall) {
@@ -59,16 +61,21 @@ export class OpenAIBot extends ChatBot<IM, RM> {
 
     const call = new FunctionCallMessage(fn, tool_call)
     this.history.push(call)
-    this.history.push(await call.invoke())
   }
 
-  private request() {
+  private async request() {
+    const input = []
+    for (const message of this.history) {
+      input.push(...await message.input())
+    }
+
     const req: ResponseCreateParams = {
       model: this.model,
-      input: this.history.map(m => m.input),
+      input,
       tools: Object.values(this.functions).map((fn) => tool(fn)),
     }
 
+    if (this.instructions) req.instructions = this.instructions
     if (this.service_tier) req.service_tier = this.service_tier
 
     return req

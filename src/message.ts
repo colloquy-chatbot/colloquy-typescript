@@ -1,12 +1,18 @@
 import type { PromptFunction } from "./function"
 
+export interface MessageFactory<M> {
+  user(text: string): M
+  deserialize(serialized: any): M[]
+}
+
 export interface Message {}
+
 export interface TextMessage extends Message {
   text: string
 }
 
 export interface InputMessage<T> {
-  input: T
+  input(): Promise<T[]>
 }
 
 export class SimpleMessage implements TextMessage {
@@ -23,8 +29,8 @@ export class RoleMessage<Role, Input> extends SimpleMessage implements InputMess
     this.role = role
   }
 
-  get input(): Input {
-    return { role: this.role, content: this.text } as Input
+  async input(): Promise<Input[]> {
+    return [{ role: this.role, content: this.text }] as Input[]
   }
 }
 

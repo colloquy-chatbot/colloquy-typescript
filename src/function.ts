@@ -4,6 +4,21 @@ import { generate } from "escodegen"
 
 export class UnnamedFunctionError extends Error {}
 
+export class PromptFunctionRepository {
+  functions: { [k: string]: PromptFunction<any> }
+  constructor(functions: PromptFunction<any>[]) {
+    this.functions = Object.fromEntries(functions.map((f) => [f.name, f]))
+  }
+
+  lookup<T>(name: string): PromptFunction<T> {
+    return this.functions[name]
+  }
+
+  get array() {
+    return Object.values(this.functions)
+  }
+}
+
 export type Parameter = {
   type: string
   description?: string

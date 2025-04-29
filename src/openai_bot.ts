@@ -2,18 +2,18 @@ import OpenAI from "openai"
 
 import { ChatBot } from "./chat_bot"
 import { FunctionCallMessage, OpenAIMessageFactory, ReasoningMessage } from "./openai/message"
-import type { PromptFunction } from "./function"
-import type { Response, ResponseCreateParams, ResponseFunctionToolCall, ResponseInputItem, ResponseStatus } from "openai/resources/responses/responses.mjs"
+import { PromptFunctionRepository, type PromptFunction } from "./function"
+import type { Response, ResponseCreateParams, ResponseFunctionToolCall, ResponseInputItem } from "openai/resources/responses/responses.mjs"
 import { tool } from "./openai/function"
 import { RoleMessage, type InputMessage } from "./message"
 
-type Role = "user" | "system" | "assistant"
+export type Role = "user" | "system" | "assistant"
 type RM = RoleMessage<Role, ResponseInputItem>
 type IM = InputMessage<ResponseInputItem>
 
 export class OpenAIBot extends ChatBot<IM> {
   openai: OpenAI
-  functions: { [name: string]: PromptFunction<any> }
+  functions: PromptFunctionRepository
   service_tier?: ResponseCreateParams["service_tier"]
   model: string
   constructor({ model = "gpt-4o-mini", service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & {
@@ -24,12 +24,12 @@ export class OpenAIBot extends ChatBot<IM> {
     super(args)
     this.openai = new OpenAI()
     this.model = model
-    this.functions = Object.fromEntries(functions.map((f) => [f.name, f]))
+    this.functions = new PromptFunctionRepository(functions)
     this.service_tier = service_tier
   }
 
   get message_factory() {
-    return new OpenAIMessageFactory()
+    return new OpenAIMessageFactory({ functions: this.functions })
   }
 
   async send_prompt(): Promise<RM> {
@@ -62,7 +62,7 @@ export class OpenAIBot extends ChatBot<IM> {
   }
 
   private async call_function(tool_call: ResponseFunctionToolCall) {
-    const fn = this.functions[tool_call.name]
+    const fn = this.functions.lookup(tool_call.name)
 
     const call = new FunctionCallMessage(fn, tool_call)
     call.invoke_fn()
@@ -78,7 +78,7 @@ export class OpenAIBot extends ChatBot<IM> {
     const req: ResponseCreateParams = {
       model: this.model,
       input,
-      tools: Object.values(this.functions).map((fn) => tool(fn)),
+      tools: this.functions.array.map((fn) => tool(fn)),
     }
 
     if (this.instructions) req.instructions = this.instructions

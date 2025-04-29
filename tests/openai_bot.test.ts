@@ -346,3 +346,11 @@ test("Provides a reply, even when the status is completed, if there is nothing b
     output: [{ type: "function_call" }],
   } as Response)).toBeTrue()
 })
+
+test("Retains any history provided in the constructor", async () => {
+  const bot = new MockOpenAIBot({ history: [new RoleMessage("user", "Hi"), new RoleMessage("assistant", "Hello")] })
+  bot.mock_response_text("Howdy")
+  await bot.prompt("Yo")
+  expect(bot.history.map((m) => (m as RoleMessage<any, any>).text))
+    .toEqual(["Hi", "Hello", "Yo", "Howdy"])
+})

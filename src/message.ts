@@ -2,7 +2,7 @@ import type { PromptFunction } from "./function"
 
 export interface MessageFactory<M> {
   user(text: string): M
-  deserialize(serialized: any): M[]
+  deserialize(serialized: any): M
 }
 
 export interface Message {}

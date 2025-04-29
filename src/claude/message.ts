@@ -12,9 +12,9 @@ export class ClaudeMessageFactory implements base.MessageFactory<IM> {
     return new base.RoleMessage("user", text)
   }
 
-  deserialize(content: any): RM[] {
+  deserialize(content: any): RM {
     if (content.type === "text") {
-      return [new base.RoleMessage("assistant", content.text)]
+      return new base.RoleMessage("assistant", content.text)
     } else {
       throw new Error(`Unhandled output type ${content.type}`);
     }

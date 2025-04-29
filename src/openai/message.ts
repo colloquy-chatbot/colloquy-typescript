@@ -1,17 +1,32 @@
 import type { ResponseFunctionToolCall, ResponseInputItem, ResponseReasoningItem } from "openai/resources/responses/responses.mjs"
-import type { PromptFunction } from "../function"
+import { PromptFunction, PromptFunctionRepository } from "../function"
 import * as base from "../message"
 
 type Role = "user" | "system" | "assistant"
 type IM = base.InputMessage<ResponseInputItem>
 
 export class OpenAIMessageFactory implements base.MessageFactory<IM> {
+  functions: PromptFunctionRepository
+  constructor({ functions }: { functions: PromptFunctionRepository }) {
+    this.functions = functions
+  }
+
   user(text: string): base.RoleMessage<Role, ResponseInputItem> {
     return new base.RoleMessage("user", text)
   }
 
-  deserialize(_serialized: any): IM[] {
-    throw new Error("Unimplemented")
+  deserialize(serialized: any): IM {
+    const json = JSON.parse(serialized)
+
+    if (json["role"])
+      return new base.RoleMessage(json["role"], json["text"])
+    else if (json["fn"])
+      return new FunctionCallMessage(
+        this.functions.lookup(json["fn"]["name"]),
+        json["tool_call"],
+      )
+    else
+      throw new Error(`Unexpected message: ${serialized}`)
   }
 }
 

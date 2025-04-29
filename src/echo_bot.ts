@@ -7,7 +7,7 @@ class EchoMessageFactory implements MessageFactory<SimpleMessage> {
   }
 
   deserialize(text: any) {
-    return [this.user(text)]
+    return this.user(text)
   }
 }
 

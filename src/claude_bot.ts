@@ -2,16 +2,16 @@ import { ChatBot } from "./chat_bot";
 import { Anthropic } from "@anthropic-ai/sdk"
 import { ClaudeMessageFactory, FunctionCallMessage, type IM, type RM } from "./claude/message";
 import type { Tool } from "@anthropic-ai/sdk/resources/index.mjs";
-import { type PromptFunction } from "./function";
+import { PromptFunctionRepository, type PromptFunction } from "./function";
 import { RoleMessage } from "./message";
 
 export class ClaudeBot extends ChatBot<IM> {
   client: Anthropic;
-  functions: { [k: string]: PromptFunction<any>; };
+  functions: PromptFunctionRepository
   constructor({ functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & { functions?: PromptFunction<any>[] } = {}) {
     super(args)
     this.client = new Anthropic()
-    this.functions = Object.fromEntries(functions.map((f) => [f.name, f]))
+    this.functions = new PromptFunctionRepository(functions)
   }
 
   get message_factory() {
@@ -40,7 +40,7 @@ export class ClaudeBot extends ChatBot<IM> {
 
   private async convert_to_message(content: Anthropic.Messages.ContentBlock): Promise<IM[]> {
     if (content.type === "tool_use") {
-      const fn = this.functions[content.name];
+      const fn = this.functions.lookup(content.name);
 
       const call = new FunctionCallMessage(fn, content);
       return [call];
@@ -59,7 +59,7 @@ export class ClaudeBot extends ChatBot<IM> {
 
     return {
       model: "claude-3-7-sonnet-20250219",
-      tools: Object.values(this.functions).map((fn) => ({
+      tools: this.functions.array.map((fn) => ({
         name: fn.name,
         description: fn.description,
         input_schema: fn.object_spec as Tool.InputSchema,

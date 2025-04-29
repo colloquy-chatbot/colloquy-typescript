@@ -15,9 +15,7 @@ export class OpenAIMessageFactory implements base.MessageFactory<IM> {
     return new base.RoleMessage("user", text)
   }
 
-  deserialize(serialized: any): IM {
-    const json = JSON.parse(serialized)
-
+  deserialize(json: any): IM {
     if (json["role"])
       return new base.RoleMessage(json["role"], json["text"])
     else if (json["fn"])
@@ -26,7 +24,7 @@ export class OpenAIMessageFactory implements base.MessageFactory<IM> {
         json["tool_call"],
       )
     else
-      throw new Error(`Unexpected message: ${serialized}`)
+      throw new Error(`Unexpected message: ${json}`)
   }
 }
 

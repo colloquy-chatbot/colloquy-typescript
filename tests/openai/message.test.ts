@@ -2,22 +2,26 @@ import { describe, test, expect } from "bun:test"
 import { FunctionCallMessage, OpenAIMessageFactory } from "../../src/openai/message"
 import { PromptFunction, PromptFunctionRepository } from "../../src/function"
 import type { ResponseInputItem } from "openai/resources/responses/responses.mjs"
-import { RoleMessage } from "../../src/message"
+import { RoleMessage, type Message } from "../../src/message"
 import type { Role } from "../../src/openai_bot"
 
 describe("OpenAIMessageFactory", () => {
   function test_fn(_a = "a") {}
   const factory = new OpenAIMessageFactory({ functions: new PromptFunctionRepository([new PromptFunction(test_fn)]) })
+
+  function expect_message_to_deserialize(message: ReturnType<typeof factory.deserialize>) {
+    expect(factory.deserialize(JSON.parse(JSON.stringify(message))))
+      .toEqual(message)
+  }
+
   test("deserializes a user message", () => {
     const message = new RoleMessage<Role, ResponseInputItem>("user", "Hello")
-    expect(factory.deserialize(JSON.stringify(message)))
-      .toEqual(message)
+    expect_message_to_deserialize(message)
   })
 
   test("deserializes an assistant message", () => {
     const message = new RoleMessage<Role, ResponseInputItem>("assistant", "Hello")
-    expect(factory.deserialize(JSON.stringify(message)))
-      .toEqual(message)
+    expect_message_to_deserialize(message)
   })
 
   test("deserialize function call", () => {
@@ -27,8 +31,7 @@ describe("OpenAIMessageFactory", () => {
       call_id: "id",
       name: "test",
     })
-    expect(factory.deserialize(JSON.stringify(fn)))
-      .toEqual(fn)
+    expect_message_to_deserialize(fn)
   })
 })
 

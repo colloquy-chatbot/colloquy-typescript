@@ -30,7 +30,7 @@ describe("OpenAIMessageFactory", () => {
       arguments: "{ '_a': 'a' }",
       call_id: "id",
       name: "test",
-    })
+    }, "x")
     expect_message_to_deserialize(fn)
   })
 })

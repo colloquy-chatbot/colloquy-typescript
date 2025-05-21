@@ -8,9 +8,9 @@ import { RoleMessage } from "./message";
 export class ClaudeBot extends ChatBot<IM> {
   client: Anthropic;
   functions: PromptFunctionRepository
-  constructor({ functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & { functions?: PromptFunction<any>[] } = {}) {
+  constructor({ functions = [], apiKey, ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & { apiKey?: string, functions?: PromptFunction<any>[] } = {}) {
     super(args)
-    this.client = new Anthropic()
+    this.client = new Anthropic({ apiKey })
     this.functions = new PromptFunctionRepository(functions)
   }
 

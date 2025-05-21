@@ -16,13 +16,14 @@ export class OpenAIBot extends ChatBot<IM> {
   functions: PromptFunctionRepository
   service_tier?: ResponseCreateParams["service_tier"]
   model: string
-  constructor({ model = "gpt-4o-mini", service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & {
+  constructor({ model = "gpt-4o-mini", apiKey, service_tier = undefined, functions = [], ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & {
+    apiKey?: string
     model?: string
     functions?: PromptFunction<any>[]
     service_tier?: ResponseCreateParams["service_tier"]
   } = {}) {
     super(args)
-    this.openai = new OpenAI()
+    this.openai = new OpenAI({ apiKey })
     this.model = model
     this.functions = new PromptFunctionRepository(functions)
     this.service_tier = service_tier

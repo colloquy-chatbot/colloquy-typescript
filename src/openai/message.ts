@@ -22,6 +22,7 @@ export class OpenAIMessageFactory implements base.MessageFactory<IM> {
       return new FunctionCallMessage(
         this.functions.lookup(json["fn"]["name"]),
         json["tool_call"],
+        json["result"],
       )
     else
       throw new Error(`Unexpected message: ${json}`)

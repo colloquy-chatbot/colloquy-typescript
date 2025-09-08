@@ -5,43 +5,43 @@ on:
     branches:
       - main
     paths:
-      - 'package.json'
+      - "package.json"
   workflow_dispatch:
     # This allows manual triggering of the workflow
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      
+
       - name: Setup Bun
         uses: oven-sh/setup-bun@v1
         with:
           bun-version: latest
-      
+
       - name: Install dependencies
         run: bun install
-      
+
       - name: Run tests
         run: bun test
         env:
           OPENAI_API_KEY: dummy-key-for-ci
-      
+
       - name: Setup npm authentication
         run: |
           # Try direct login first
           echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_AUTH_TOKEN }}" > ~/.npmrc
-          
+
           # Let's try solving it specifically from Bun's perspective
           bunx npm config set //registry.npmjs.org/:_authToken "${{ secrets.NPM_AUTH_TOKEN }}"
-      
+
       - name: Publish package
         run: |
           # Check if we're authenticated
           npm whoami || echo "Authentication still not working"
-          
+
           # Try publishing with npm directly if bun has issues
           npm publish --access public

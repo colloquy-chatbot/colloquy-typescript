@@ -1,60 +1,78 @@
 import { ChatBot } from "./chat_bot";
-import { Anthropic } from "@anthropic-ai/sdk"
-import { ClaudeMessageFactory, FunctionCallMessage, type IM, type RM } from "./claude/message";
+import { Anthropic } from "@anthropic-ai/sdk";
+import {
+  ClaudeMessageFactory,
+  FunctionCallMessage,
+  type IM,
+  type RM,
+} from "./claude/message";
 import type { Tool } from "@anthropic-ai/sdk/resources/index.mjs";
 import { PromptFunctionRepository, type PromptFunction } from "./function";
 import { RoleMessage } from "./message";
 
 export class ClaudeBot extends ChatBot<IM> {
   client: Anthropic;
-  functions: PromptFunctionRepository
-  constructor({ functions = [], apiKey, ...args }: ConstructorParameters<typeof ChatBot<IM>>[0] & { apiKey?: string, functions?: PromptFunction<any>[] } = {}) {
-    super(args)
-    this.client = new Anthropic({ apiKey })
-    this.functions = new PromptFunctionRepository(functions)
+  functions: PromptFunctionRepository;
+  constructor({
+    functions = [],
+    apiKey,
+    ...args
+  }: ConstructorParameters<typeof ChatBot<IM>>[0] & {
+    apiKey?: string;
+    functions?: PromptFunction<any>[];
+  } = {}) {
+    super(args);
+    this.client = new Anthropic({ apiKey });
+    this.functions = new PromptFunctionRepository(functions);
   }
 
   get message_factory() {
-    return new ClaudeMessageFactory()
+    return new ClaudeMessageFactory();
   }
 
   async send_prompt(): Promise<RM> {
-    if (this.debug) console.debug("request", await this.request())
-    const response = await this.client.messages.create(await this.request())
-    if (this.debug) console.debug("response", response)
+    if (this.debug) console.debug("request", await this.request());
+    const response = await this.client.messages.create(await this.request());
+    if (this.debug) console.debug("response", response);
 
     for (const content of response.content) {
-      this.history.push(...await this.convert_to_message(content))
+      this.history.push(...(await this.convert_to_message(content)));
     }
 
     if (this.needs_reply(response)) {
-      return await this.send_prompt()
+      return await this.send_prompt();
     } else {
-      return this.history.pop() as RM
+      return this.history.pop() as RM;
     }
   }
 
-  needs_reply(response: Anthropic.Messages.Message & { _request_id?: string | null | undefined; }) {
+  needs_reply(
+    response: Anthropic.Messages.Message & {
+      _request_id?: string | null | undefined;
+    },
+  ) {
     return response.stop_reason != "end_turn";
   }
 
-  private async convert_to_message(content: Anthropic.Messages.ContentBlock): Promise<IM[]> {
+  private async convert_to_message(
+    content: Anthropic.Messages.ContentBlock,
+  ): Promise<IM[]> {
     if (content.type === "tool_use") {
       const fn = this.functions.lookup(content.name);
 
       const call = new FunctionCallMessage(fn, content);
       return [call];
     } else if (content.type === "text") {
-      return [new RoleMessage("assistant", content.text)]
+      return [new RoleMessage("assistant", content.text)];
     } else {
       throw new Error(`Unhandled output type ${content.type}`);
     }
   }
 
   private async request(): Promise<Anthropic.Messages.MessageCreateParamsNonStreaming> {
-    const messages = []
+    const messages = [];
     for (const message of this.history) {
-      messages.push(...await message.input())
+      messages.push(...(await message.input()));
     }
 
     return {

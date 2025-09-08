@@ -1,13 +1,13 @@
 import { type PromptFunction } from "../function";
-import type { FunctionTool } from "openai/resources/responses/responses.mjs"
+import type { FunctionTool } from "openai/resources/responses/responses.mjs";
 
 type StrictFunctionTool = FunctionTool & {
   parameters: {
-    properties: Record<string, unknown>,
-    additionalProperties: boolean,
-    required: string[],
-  }
-}
+    properties: Record<string, unknown>;
+    additionalProperties: boolean;
+    required: string[];
+  };
+};
 
 export function tool<T>(fn: PromptFunction<T>): StrictFunctionTool {
   const tool: StrictFunctionTool = {
@@ -18,8 +18,8 @@ export function tool<T>(fn: PromptFunction<T>): StrictFunctionTool {
       additionalProperties: false,
     },
     strict: true,
-  }
-  if (fn.description) tool.description = fn.description
+  };
+  if (fn.description) tool.description = fn.description;
 
-  return tool
+  return tool;
 }

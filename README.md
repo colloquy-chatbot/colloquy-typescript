@@ -22,12 +22,12 @@ import { OpenAIBot, ClaudeBot, PromptFunction } from "colloquy_chatbot";
 
 // Create a basic OpenAI chatbot
 const openaiBot = new OpenAIBot({
-  instructions: "You are a helpful assistant."
+  instructions: "You are a helpful assistant.",
 });
 
 // Or use Claude
 const claudeBot = new ClaudeBot({
-  instructions: "You are a helpful assistant."
+  instructions: "You are a helpful assistant.",
 });
 
 // Send a message and get a response
@@ -43,12 +43,14 @@ const weatherBot = new OpenAIBot({
   instructions: "You can check the weather.",
   functions: [
     new PromptFunction(getWeather, {
-      description: "Get the current weather for a location"
-    })
-  ]
+      description: "Get the current weather for a location",
+    }),
+  ],
 });
 
-const weatherResponse = await weatherBot.prompt("What's the weather like in Tokyo?");
+const weatherResponse = await weatherBot.prompt(
+  "What's the weather like in Tokyo?",
+);
 console.log(weatherResponse);
 ```
 
@@ -62,7 +64,7 @@ The main chatbot implementation that uses OpenAI's API:
 import { OpenAIBot } from "colloquy_chatbot";
 
 const bot = new OpenAIBot({
-  instructions: "You are a helpful assistant." // Optional system message
+  instructions: "You are a helpful assistant.", // Optional system message
 });
 
 const response = await bot.prompt("Hello!");
@@ -80,7 +82,7 @@ The chatbot implementation that uses Anthropic's Claude API:
 import { ClaudeBot } from "colloquy_chatbot";
 
 const bot = new ClaudeBot({
-  instructions: "You are a helpful assistant." // Optional system message
+  instructions: "You are a helpful assistant.", // Optional system message
 });
 
 const response = await bot.prompt("Hello!");
@@ -142,10 +144,10 @@ const bot = new OpenAIBot({
       description: "Calculate the area of a rectangle",
       parameters: {
         length: { description: "The length of the rectangle" },
-        width: { description: "The width of the rectangle" }
-      }
-    })
-  ]
+        width: { description: "The width of the rectangle" },
+      },
+    }),
+  ],
 });
 
 // The AI can now use the function when appropriate
@@ -170,10 +172,10 @@ const bot = new ClaudeBot({
       description: "Calculate the area of a rectangle",
       parameters: {
         length: { description: "The length of the rectangle" },
-        width: { description: "The width of the rectangle" }
-      }
-    })
-  ]
+        width: { description: "The width of the rectangle" },
+      },
+    }),
+  ],
 });
 
 // Claude can now use the function when appropriate
@@ -182,9 +184,10 @@ console.log(response);
 ```
 
 It can infer a lot from the function definition itself:
-* It can determine the name from the name of the function
+
+- It can determine the name from the name of the function
   - It understands both `() => "foo"` and `function test() { return "foo" }`, but only the latter has a name attached
-* Default parameters are used to infer the type when they are specified
+- Default parameters are used to infer the type when they are specified
   - Typescript annotations are stripped at runtime, but default parameters are always there
 
 These inferences are there to make your life easier, but you can always override everything but parameter names like this:
@@ -201,9 +204,9 @@ new PromptFunction(calculateArea, {
     width: {
       type: "number",
       description: "The width of the rectangle",
-    }
-  }
-})
+    },
+  },
+});
 ```
 
 Positional arguments get translated into an object before being sent to OpenAI, so feel free to use them in your functions. The goal is to allow you to define functions in a way that is intuitive, while still translating into a form supported by the API.

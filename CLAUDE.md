@@ -3,6 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Build & Test Commands
+
 - Install dependencies: `bun install`
 - Run the project: `bun run index.ts`
 - Run all tests: `bun test`
@@ -15,6 +16,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 When the user corrects a suggested command, record it here for later use.
 
 ## Code Style Guidelines
+
 - **Types**: Use TypeScript with strict mode enabled
 - **Imports**: Use ES modules (`import` syntax)
 - **Error Handling**: Create custom error classes that extend Error
@@ -25,6 +27,7 @@ When the user corrects a suggested command, record it here for later use.
 - **Format**: Keep code clean and consistent with clear naming
 
 ## Deployment
+
 - Package is auto-published via GitHub Actions when:
   1. Changes are pushed to `main` branch
   2. `package.json` was modified

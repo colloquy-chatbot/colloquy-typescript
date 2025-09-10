@@ -1,4 +1,4 @@
-import type { PromptFunction } from "./function";
+import type { PromptFunction } from "./function.js";
 
 export interface MessageFactory<M> {
   user(text: string): M;

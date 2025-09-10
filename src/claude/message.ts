@@ -2,8 +2,8 @@ import type {
   MessageParam,
   ToolUseBlock,
 } from "@anthropic-ai/sdk/resources/index.mjs";
-import * as base from "../message";
-import type { PromptFunction } from "../function";
+import * as base from "../message.js";
+import type { PromptFunction } from "../function.js";
 
 type Role = "user" | "assistant";
 

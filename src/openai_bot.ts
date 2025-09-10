@@ -1,20 +1,20 @@
 import OpenAI from "openai";
 
-import { ChatBot } from "./chat_bot";
+import { ChatBot } from "./chat_bot.js";
 import {
   FunctionCallMessage,
   OpenAIMessageFactory,
   ReasoningMessage,
-} from "./openai/message";
-import { PromptFunctionRepository, type PromptFunction } from "./function";
+} from "./openai/message.js";
+import { PromptFunctionRepository, type PromptFunction } from "./function.js";
 import type {
   Response,
   ResponseCreateParams,
   ResponseFunctionToolCall,
   ResponseInputItem,
 } from "openai/resources/responses/responses.mjs";
-import { tool } from "./openai/function";
-import { RoleMessage, type InputMessage } from "./message";
+import { tool } from "./openai/function.js";
+import { RoleMessage, type InputMessage } from "./message.js";
 
 export type Role = "user" | "system" | "assistant";
 type RM = RoleMessage<Role, ResponseInputItem>;

@@ -1,4 +1,4 @@
-import type { Message, MessageFactory, TextMessage } from "./message";
+import type { Message, MessageFactory, TextMessage } from "./message.js";
 
 export abstract class ChatBot<M extends Message> {
   history: M[];

@@ -1,14 +1,14 @@
-import { ChatBot } from "./chat_bot";
+import { ChatBot } from "./chat_bot.js";
 import { Anthropic } from "@anthropic-ai/sdk";
 import {
   ClaudeMessageFactory,
   FunctionCallMessage,
   type IM,
   type RM,
-} from "./claude/message";
+} from "./claude/message.js";
 import type { Tool } from "@anthropic-ai/sdk/resources/index.mjs";
-import { PromptFunctionRepository, type PromptFunction } from "./function";
-import { RoleMessage } from "./message";
+import { PromptFunctionRepository, type PromptFunction } from "./function.js";
+import { RoleMessage } from "./message.js";
 
 export class ClaudeBot extends ChatBot<IM> {
   client: Anthropic;

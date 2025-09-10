@@ -3,8 +3,8 @@ import type {
   ResponseInputItem,
   ResponseReasoningItem,
 } from "openai/resources/responses/responses.mjs";
-import { PromptFunction, PromptFunctionRepository } from "../function";
-import * as base from "../message";
+import { PromptFunction, PromptFunctionRepository } from "../function.js";
+import * as base from "../message.js";
 
 type Role = "user" | "system" | "assistant";
 type IM = base.InputMessage<ResponseInputItem>;

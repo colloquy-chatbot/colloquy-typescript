@@ -1,4 +1,4 @@
-import { type PromptFunction } from "../function";
+import { type PromptFunction } from "../function.js";
 import type { FunctionTool } from "openai/resources/responses/responses.mjs";
 
 type StrictFunctionTool = FunctionTool & {

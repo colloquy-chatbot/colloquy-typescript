@@ -1,5 +1,5 @@
-import { ChatBot } from "./chat_bot";
-import { type MessageFactory, SimpleMessage } from "./message";
+import { ChatBot } from "./chat_bot.js";
+import { type MessageFactory, SimpleMessage } from "./message.js";
 
 class EchoMessageFactory implements MessageFactory<SimpleMessage> {
   user(text: string) {

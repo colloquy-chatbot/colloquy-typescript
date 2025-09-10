@@ -1,8 +1,21 @@
 {
   "name": "colloquy_chatbot",
-  "version": "0.8.0",
-  "main": "./src/colloquy.ts",
+  "version": "0.8.1",
+  "main": "./dist/colloquy.js",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/colloquy.d.ts",
+      "import": "./dist/colloquy.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "bun run build"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/escodegen": "^0.0.10",

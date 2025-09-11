@@ -1,4 +1,4 @@
-import { type PromptFunction } from "../function.js";
+import { type IPromptFunction } from "../function.js";
 import type { FunctionTool } from "openai/resources/responses/responses.mjs";
 
 type StrictFunctionTool = FunctionTool & {
@@ -9,7 +9,7 @@ type StrictFunctionTool = FunctionTool & {
   };
 };
 
-export function tool<T>(fn: PromptFunction<T>): StrictFunctionTool {
+export function tool<T>(fn: IPromptFunction<T>): StrictFunctionTool {
   const tool: StrictFunctionTool = {
     type: "function",
     name: fn.name,

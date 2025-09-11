@@ -1,4 +1,4 @@
-import type { PromptFunction } from "./function.js";
+import type { IPromptFunction } from "./function.js";
 
 export interface MessageFactory<M> {
   user(text: string): M;
@@ -38,9 +38,9 @@ export class RoleMessage<Role, Input>
 }
 
 export abstract class FunctionCallMessage<ReturnValue> {
-  fn: PromptFunction<ReturnValue>;
+  fn: IPromptFunction<ReturnValue>;
   result?: string;
-  constructor(fn: PromptFunction<ReturnValue>, result?: string) {
+  constructor(fn: IPromptFunction<ReturnValue>, result?: string) {
     this.fn = fn;
     this.result = result;
   }

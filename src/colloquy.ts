@@ -6,6 +6,7 @@ export { MockBot } from "./mock_bot.js";
 export { OpenAIBot } from "./openai_bot.js";
 export { OpenAIMessageFactory } from "./openai/message.js";
 export { ClaudeBot } from "./claude_bot.js";
+export type { IPromptFunction } from "./function.js";
 export {
   PromptFunction,
   PromptFunctionRepository,

@@ -12,12 +12,12 @@ import { generate } from "escodegen";
 export class UnnamedFunctionError extends Error {}
 
 export class PromptFunctionRepository {
-  functions: { [k: string]: PromptFunction<any> };
-  constructor(functions: PromptFunction<any>[]) {
+  functions: { [k: string]: IPromptFunction<any> };
+  constructor(functions: IPromptFunction<any>[]) {
     this.functions = Object.fromEntries(functions.map((f) => [f.name, f]));
   }
 
-  lookup<T>(name: string): PromptFunction<T> {
+  lookup<T>(name: string): IPromptFunction<T> {
     return this.functions[name];
   }
 
@@ -40,7 +40,23 @@ type ParameterOverlay = {
 };
 type ParametersOverlay = { [name: string]: ParameterOverlay };
 
-export class PromptFunction<Return> {
+export interface IPromptFunction<Return> {
+  readonly fn: (...args: any[]) => Return;
+  readonly name: string;
+  readonly description: string | undefined;
+  readonly parameters: ParametersOverlay;
+  readonly object_spec: {
+    type: string;
+    properties: { [name: string]: Parameter };
+    required: string[];
+  };
+  readonly properties: { [name: string]: Parameter };
+  readonly parameter_names: string[];
+  
+  invoke(params: { [name: string]: any }): Promise<string>;
+}
+
+export class PromptFunction<Return> implements IPromptFunction<Return> {
   fn: (...args: any[]) => Return;
   name: string;
   description: string | undefined;

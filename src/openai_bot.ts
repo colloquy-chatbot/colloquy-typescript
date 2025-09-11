@@ -6,7 +6,7 @@ import {
   OpenAIMessageFactory,
   ReasoningMessage,
 } from "./openai/message.js";
-import { PromptFunctionRepository, type PromptFunction } from "./function.js";
+import { PromptFunctionRepository, type IPromptFunction } from "./function.js";
 import type {
   Response,
   ResponseCreateParams,
@@ -34,7 +34,7 @@ export class OpenAIBot extends BaseBot<IM> {
   }: ConstructorParameters<typeof BaseBot<IM>>[0] & {
     apiKey?: string;
     model?: string;
-    functions?: PromptFunction<any>[];
+    functions?: IPromptFunction<any>[];
     service_tier?: ResponseCreateParams["service_tier"];
   } = {}) {
     super(args);

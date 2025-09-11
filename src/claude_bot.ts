@@ -7,7 +7,7 @@ import {
   type RM,
 } from "./claude/message.js";
 import type { Tool } from "@anthropic-ai/sdk/resources/index.mjs";
-import { PromptFunctionRepository, type PromptFunction } from "./function.js";
+import { PromptFunctionRepository, type IPromptFunction } from "./function.js";
 import { RoleMessage } from "./message.js";
 
 export class ClaudeBot extends BaseBot<IM> {
@@ -19,7 +19,7 @@ export class ClaudeBot extends BaseBot<IM> {
     ...args
   }: ConstructorParameters<typeof BaseBot<IM>>[0] & {
     apiKey?: string;
-    functions?: PromptFunction<any>[];
+    functions?: IPromptFunction<any>[];
   } = {}) {
     super(args);
     this.client = new Anthropic({ apiKey });

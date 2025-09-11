@@ -3,7 +3,7 @@ import type {
   ResponseInputItem,
   ResponseReasoningItem,
 } from "openai/resources/responses/responses.mjs";
-import { PromptFunction, PromptFunctionRepository } from "../function.js";
+import { type IPromptFunction, PromptFunctionRepository } from "../function.js";
 import * as base from "../message.js";
 
 type Role = "user" | "system" | "assistant";
@@ -37,7 +37,7 @@ export class FunctionCallMessage<ReturnValue>
 {
   tool_call: ResponseFunctionToolCall;
   constructor(
-    fn: PromptFunction<ReturnValue>,
+    fn: IPromptFunction<ReturnValue>,
     tool_call: ResponseFunctionToolCall,
     result?: string,
   ) {

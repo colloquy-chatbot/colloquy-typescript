@@ -3,7 +3,7 @@ import type {
   ToolUseBlock,
 } from "@anthropic-ai/sdk/resources/index.mjs";
 import * as base from "../message.js";
-import type { PromptFunction } from "../function.js";
+import type { IPromptFunction } from "../function.js";
 
 type Role = "user" | "assistant";
 
@@ -29,7 +29,7 @@ export class FunctionCallMessage<T>
   implements base.InputMessage<MessageParam>
 {
   content: ToolUseBlock;
-  constructor(fn: PromptFunction<T>, content: ToolUseBlock, result?: string) {
+  constructor(fn: IPromptFunction<T>, content: ToolUseBlock, result?: string) {
     super(fn, result);
     this.content = content;
   }

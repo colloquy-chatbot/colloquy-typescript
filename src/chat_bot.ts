@@ -1,6 +1,16 @@
 import type { Message, MessageFactory, TextMessage } from "./message.js";
 
-export abstract class ChatBot<M extends Message> {
+export interface ChatBot<M extends Message> {
+  readonly history: M[];
+  readonly instructions: string | undefined;
+  readonly debug: boolean;
+  readonly message_factory: MessageFactory<M>;
+
+  prompt(content: string): Promise<string>;
+  send_prompt(): Promise<TextMessage & M>;
+}
+
+export abstract class BaseBot<M extends Message> implements ChatBot<M> {
   history: M[];
   instructions: string | undefined;
   debug: boolean;

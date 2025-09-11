@@ -1,4 +1,4 @@
-import { ChatBot } from "./chat_bot.js";
+import { BaseBot } from "./chat_bot.js";
 import { type MessageFactory, SimpleMessage } from "./message.js";
 
 class EchoMessageFactory implements MessageFactory<SimpleMessage> {
@@ -11,7 +11,7 @@ class EchoMessageFactory implements MessageFactory<SimpleMessage> {
   }
 }
 
-export class EchoBot extends ChatBot<SimpleMessage> {
+export class EchoBot extends BaseBot<SimpleMessage> {
   get message_factory() {
     return new EchoMessageFactory();
   }

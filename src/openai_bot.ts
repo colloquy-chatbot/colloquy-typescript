@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 
-import { ChatBot } from "./chat_bot.js";
+import { BaseBot } from "./chat_bot.js";
 import {
   FunctionCallMessage,
   OpenAIMessageFactory,
@@ -20,7 +20,7 @@ export type Role = "user" | "system" | "assistant";
 type RM = RoleMessage<Role, ResponseInputItem>;
 type IM = InputMessage<ResponseInputItem>;
 
-export class OpenAIBot extends ChatBot<IM> {
+export class OpenAIBot extends BaseBot<IM> {
   openai: OpenAI;
   functions: PromptFunctionRepository;
   service_tier?: ResponseCreateParams["service_tier"];
@@ -31,7 +31,7 @@ export class OpenAIBot extends ChatBot<IM> {
     service_tier = undefined,
     functions = [],
     ...args
-  }: ConstructorParameters<typeof ChatBot<IM>>[0] & {
+  }: ConstructorParameters<typeof BaseBot<IM>>[0] & {
     apiKey?: string;
     model?: string;
     functions?: PromptFunction<any>[];

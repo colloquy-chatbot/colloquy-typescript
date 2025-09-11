@@ -1,4 +1,5 @@
 export type { ChatBot } from "./chat_bot.js";
+export type { Message } from "./message.js"
 export { EchoBot } from "./echo_bot.js";
 export { OpenAIBot } from "./openai_bot.js";
 export { OpenAIMessageFactory } from "./openai/message.js"

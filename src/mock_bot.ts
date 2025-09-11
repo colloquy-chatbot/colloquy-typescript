@@ -12,9 +12,9 @@ class MockMessageFactory implements MessageFactory<SimpleMessage> {
 }
 
 export class MockBot extends BaseBot<SimpleMessage> {
-  private responses: string[] = [];
+  private responses: (string | Error)[] = [];
   private responseIndex: number = 0;
-  private defaultResponse: string = "Mock response";
+  private defaultResponse: string | Error = "Mock response";
 
   constructor({
     instructions,
@@ -26,8 +26,8 @@ export class MockBot extends BaseBot<SimpleMessage> {
     instructions?: string;
     history?: SimpleMessage[];
     debug?: boolean;
-    responses?: string[];
-    defaultResponse?: string;
+    responses?: (string | Error)[];
+    defaultResponse?: string | Error;
   } = {}) {
     super({ instructions, history, debug });
     this.responses = responses;
@@ -39,28 +39,44 @@ export class MockBot extends BaseBot<SimpleMessage> {
   }
 
   async send_prompt() {
-    let responseText: string;
+    let response: string | Error;
 
     if (this.responseIndex < this.responses.length) {
-      responseText = this.responses[this.responseIndex];
+      response = this.responses[this.responseIndex];
       this.responseIndex++;
     } else {
-      responseText = this.defaultResponse;
+      response = this.defaultResponse;
     }
 
-    return new SimpleMessage(responseText);
+    if (response instanceof Error) {
+      throw response;
+    }
+
+    return new SimpleMessage(response);
   }
 
-  addResponse(response: string) {
+  addResponse(response: string | Error) {
     this.responses.push(response);
   }
 
-  addResponses(responses: string[]) {
+  addResponses(responses: (string | Error)[]) {
     this.responses.push(...responses);
   }
 
-  setDefaultResponse(response: string) {
+  addError(error: Error) {
+    this.responses.push(error);
+  }
+
+  addErrors(errors: Error[]) {
+    this.responses.push(...errors);
+  }
+
+  setDefaultResponse(response: string | Error) {
     this.defaultResponse = response;
+  }
+
+  setDefaultError(error: Error) {
+    this.defaultResponse = error;
   }
 
   reset() {

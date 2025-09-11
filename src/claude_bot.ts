@@ -1,4 +1,4 @@
-import { ChatBot } from "./chat_bot.js";
+import { BaseBot } from "./chat_bot.js";
 import { Anthropic } from "@anthropic-ai/sdk";
 import {
   ClaudeMessageFactory,
@@ -10,14 +10,14 @@ import type { Tool } from "@anthropic-ai/sdk/resources/index.mjs";
 import { PromptFunctionRepository, type PromptFunction } from "./function.js";
 import { RoleMessage } from "./message.js";
 
-export class ClaudeBot extends ChatBot<IM> {
+export class ClaudeBot extends BaseBot<IM> {
   client: Anthropic;
   functions: PromptFunctionRepository;
   constructor({
     functions = [],
     apiKey,
     ...args
-  }: ConstructorParameters<typeof ChatBot<IM>>[0] & {
+  }: ConstructorParameters<typeof BaseBot<IM>>[0] & {
     apiKey?: string;
     functions?: PromptFunction<any>[];
   } = {}) {

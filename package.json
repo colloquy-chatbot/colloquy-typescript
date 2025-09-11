@@ -1,6 +1,6 @@
 {
   "name": "colloquy_chatbot",
-  "version": "0.10.0",
+  "version": "0.11.0",
   "main": "./dist/colloquy.js",
   "types": "./dist/colloquy.d.ts",
   "type": "module",
@@ -15,7 +15,11 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "bun run build"
+    "test": "bun test",
+    "check": "bun x tsc --noEmit",
+    "lint": "echo 'No linting configured - passing'",
+    "verify": "bun run build && bun run test && bun run check",
+    "prepublishOnly": "bun run verify"
   },
   "devDependencies": {
     "@types/bun": "latest",

@@ -1,13 +1,13 @@
 {
   "name": "colloquy_chatbot",
-  "version": "0.8.3",
-  "main": "./dist/src/colloquy.js",
-  "types": "./dist/src/colloquy.d.ts",
+  "version": "0.8.4",
+  "main": "./dist/colloquy.js",
+  "types": "./dist/colloquy.d.ts",
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/src/colloquy.d.ts",
-      "import": "./dist/src/colloquy.js"
+      "types": "./dist/colloquy.d.ts",
+      "import": "./dist/colloquy.js"
     }
   },
   "files": [
